@@ -321,11 +321,7 @@ def load_model(args, model_without_ddp, optimizer, loss_scaler):
 
 def load_pretrain(args, model):
     if args.pretrain:
-        if args.pretrain.startswith('https'):
-            checkpoint = torch.hub.load_state_dict_from_url(
-                args.pretrain, map_location='cpu', check_hash=True)
-        else:
-            checkpoint = torch.load(args.pretrain, map_location='cpu')
+        checkpoint = torch.load(args.pretrain, map_location='cpu')
         missing_keys, unexpected_keys = model.load_state_dict(checkpoint['model'], strict=False)
         if missing_keys:
             print("Missing keys in state_dict:")

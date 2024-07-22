@@ -74,7 +74,7 @@ def get_args_parser():
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--resume', default='',
                         help='resume from checkpoint')
-    parser.add_argument('--pretrained', default=None, type=str,
+    parser.add_argument('--pretrain', default=None, type=str,
                         help='use pre-trained model')
 
     parser.add_argument('--start_epoch', default=0, type=int, metavar='N',

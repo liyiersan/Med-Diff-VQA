@@ -10,37 +10,41 @@ MIMIC_DEFAULT_STD = (0.229, 0.224, 0.225)
 
 
 # data augmentation, modified from https://github.com/lambert-x/medical_mae/main_pretrain_multi_datasets_xray.py
-def build_transform(is_train, args):
+def build_transform(is_pretrain, args):
     dataset_mean = MIMIC_DEFAULT_MEAN
     dataset_std = MIMIC_DEFAULT_STD
-    if args.random_resize_range and is_train:
-        resize_ratio_min, resize_ratio_max = args.random_resize_range
-        print(resize_ratio_min, resize_ratio_max)
-        transform = transforms.Compose([
-            transforms.RandomResizedCrop(args.input_size, scale=(resize_ratio_min, resize_ratio_max),
-                                            interpolation=3),  # 3 is bicubic
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(dataset_mean, dataset_std)])
-
+    if is_pretrain:
+        if args.random_resize_range:
+            resize_ratio_min, resize_ratio_max = args.random_resize_range
+            print(resize_ratio_min, resize_ratio_max)
+            transform = transforms.Compose([
+                transforms.RandomResizedCrop(args.input_size, scale=(resize_ratio_min, resize_ratio_max),
+                                                interpolation=3),  # 3 is bicubic
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(dataset_mean, dataset_std)])
+        else:
+            print('Using Directly-Resize Mode. (no RandomResizedCrop)')
+            transform = transforms.Compose([
+                transforms.Resize((args.input_size, args.input_size)),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(dataset_mean, dataset_std)])
     else:
-        print('Using Directly-Resize Mode. (no RandomResizedCrop)')
         transform = transforms.Compose([
             transforms.Resize((args.input_size, args.input_size)),
-            transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(dataset_mean, dataset_std)])
-        
     return transform
 
 class MimicImageDataset(Dataset):
-    def __init__(self, data_dir="/data/mimic-cxr-jpg-2.1.0/", flag='train', args=None):
+    def __init__(self, data_dir="/data/mimic-cxr-jpg-2.1.0/", flag='train', args=None, is_pretrain=True):
         csv_name = flag + '_mimic-metadata.csv'
         self.data_frame = pd.read_csv(os.path.join(data_dir, csv_name))
         self.ref_img_path_list = self.data_frame['ref_path']
         self.study_img_path_list = self.data_frame['study_path']
         assert len(self.ref_img_path_list) == len(self.study_img_path_list), 'ref and study image number not equal'
-        self.transform = build_transform(is_train=(flag == 'train'), args=args)
+        self.transform = build_transform(is_pretrain, args=args)
     def __len__(self):
         return len(self.ref_img_path_list)
 
@@ -50,7 +54,7 @@ class MimicImageDataset(Dataset):
         if self.transform:
             ref_img = self.transform(Image.open(ref_img_path))
             study_img = self.transform(Image.open(study_img_path))
-        return study_img, ref_img
+        return ref_img, study_img
 
     
 def split_train_val_test(data_dir, csv_file):

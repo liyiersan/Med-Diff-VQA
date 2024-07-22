@@ -132,11 +132,7 @@ class MaskedAutoencoderViT(nn.Module):
 
         self.norm_pix_loss = norm_pix_loss
         self.mask_strategy = random_strategy
-        assert random_strategy in ['random', 'mixed', 'dual_mixed'], f"Unknown random strategy: {random_strategy}, should be 'random', 'mixed', or 'dual_mixed'"
-        
-        if self.mask_strategy == "mixed" or self.mask_strategy == "dual":
-            self.mix_token_1 = nn.Parameter(torch.zeros(1, 1, embed_dim))
-            self.mix_token_2 = nn.Parameter(torch.zeros(1, 1, embed_dim))
+        assert random_strategy in ['random', 'mixed', 'dual'], f"Unknown random strategy: {random_strategy}, should be 'random', 'mixed', or 'dual'"
 
         self.initialize_weights()
 
@@ -156,10 +152,6 @@ class MaskedAutoencoderViT(nn.Module):
         # timm's trunc_normal_(std=.02) is effectively normal_(std=0.02) as cutoff is too big (2.)
         torch.nn.init.normal_(self.cls_token, std=.02)
         torch.nn.init.normal_(self.mask_token, std=.02)
-        
-        if hasattr(self, 'mix_token_1'):
-            torch.nn.init.normal_(self.mix_token_1, std=.02)
-            torch.nn.init.normal_(self.mix_token_2, std=.02)
 
         # initialize nn.Linear and nn.LayerNorm
         self.apply(self._init_weights)
@@ -224,8 +216,6 @@ class MaskedAutoencoderViT(nn.Module):
         
         return mask, ids_shuffle, ids_restore
         
-        
-    
     def mix_masking(self, x, mask_ratio=0.5):
         """
         ideas from MixMAE: Mixed and Masked Autoencoder for Efficient Pretraining of Hierarchical Vision Transformers
@@ -238,10 +228,6 @@ class MaskedAutoencoderViT(nn.Module):
         
         mask_expanded = mask.unsqueeze(-1).repeat(1, 1, x.shape[-1])  # [N, L, D]
         
-        # add mixed tokens as in suggested in MixMAE
-        x = x + self.mix_token_1
-        x_reordered = x_reordered + self.mix_token_2
-        
         x_mix = x * (1 - mask_expanded) + x_reordered *  mask_expanded
         
         return x_mix, mask
@@ -253,10 +239,6 @@ class MaskedAutoencoderViT(nn.Module):
         mask, ids_shuffle, ids_restore = self.gen_mask(x, mask_ratio)
         
         mask_expanded = mask.unsqueeze(-1).repeat(1, 1, x.shape[-1])  # [N, L, D]
-        
-        # add mixed tokens as in suggested in MixMAE
-        x_ref = x_ref + self.mix_token_1
-        x_study = x_study + self.mix_token_2
         
         x_mix = x_ref * (1 - mask_expanded) + x_study *  mask_expanded
         
