@@ -70,9 +70,9 @@ python -m torch.distributed.launch --nproc_per_node=8 \
  --use_env main_pretrain_multi_datasets_xray.py \
  --output_dir ${SAVE_DIR} \
  --log_dir ${SAVE_DIR} \
- --batch_size 256 \
+ --batch_size 128 \
  --model mae_vit_small_patch16_dec512d2b \
- --mask_ratio 0.90 \
+ --mask_ratio 0.5 \
  --epochs 800 \
  --warmup_epochs 40 \
  --blr 1.5e-4 --weight_decay 0.05 \
@@ -90,9 +90,9 @@ python -m torch.distributed.launch --nproc_per_node=8 \
  --use_env main_pretrain_multi_datasets_xray.py \
  --output_dir ${SAVE_DIR} \
  --log_dir ${SAVE_DIR} \
- --batch_size 256 \
+ --batch_size 128 \
  --model mae_vit_small_patch16_dec512d2b \
- --mask_ratio 0.90 \
+ --mask_ratio 0.5 \
  --epochs 800 \
  --warmup_epochs 40 \
  --blr 1.5e-4 --weight_decay 0.05 \
