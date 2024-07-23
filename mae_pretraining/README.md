@@ -4,7 +4,7 @@
 Three related worsk are included: [MAE](https://github.com/facebookresearch/mae), [MixMAE](https://github.com/Sense-X/MixMIM), [MedMAE](https://github.com/lambert-x/medical_mae).
 
 ### Pretrained weights of existing approaches
-Use the ViT-base model as backbone, pretrained weights can be downloaded from [ImageNet-1k-pretrain](https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_base.pth) and [Mimic-pretrain](https://drive.google.com/file/d/10wqOFCkhyWp6JdSFADrH6Xu9e1am3gXJ/view?usp=share_link)
+Use the ViT-base model as backbone, and pretrained weights can be downloaded from [ImageNet-1k-pretrain](https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_base.pth) and [Mimic-pretrain](https://drive.google.com/file/d/10wqOFCkhyWp6JdSFADrH6Xu9e1am3gXJ/view?usp=share_link)
 
 
 ### Masked Strategy
@@ -17,7 +17,7 @@ Use the ViT-base model as backbone, pretrained weights can be downloaded from [I
 | MixMAE | dual  | 0.5        |
 
 
-You need to set the masked strategy and mask_ratio accordingly.
+You need to set the mask_strategy and mask_ratio accordingly.
 
 
 ## Pretrain
