@@ -15,6 +15,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from utils.pos_embed import get_2d_sincos_pos_embed
 
 class MaskAttention(Attention):
+    fused_attn = False
     def __init__(
             self,
             dim: int,
@@ -44,13 +45,16 @@ class MaskAttention(Attention):
             attn = q @ k.transpose(-2, -1) # [B, H, N, N]
             
             # mask attention, for each mixed sample, the self-attention should be conducted within the same group of patches, i.e., have the same mask
-            mask = mask.reshape(B, 1, 1, N)
+            mask = mask.reshape(B, 1, 1, N-1) # no mask for cls_token
             mask_new = mask * mask.transpose(2, 3) + (1 - mask) * (1 - mask).transpose(2, 3)
-            mask_new = 1 - mask_new
-            if mask_new.dtype == torch.float16:
-                attn = attn - 65500 * mask_new
+            mask_new = 1 - mask_new # [B, 1, N-1, N-1]
+            # no mask on cls_token
+            mask_all = torch.ones([B, 1, N, N]).to(mask.device)
+            mask_all[..., 1:, 1:] = mask_new
+            if mask_all.dtype == torch.float16:
+                attn = attn - 65500 * mask_all
             else:
-                attn = attn - 1e30 * mask_new
+                attn = attn - 1e30 * mask_all
             
             attn = attn.softmax(dim=-1)
             attn = self.attn_drop(attn)
@@ -244,9 +248,10 @@ class MaskedAutoencoderViT(nn.Module):
 
     def dual_masking(self, x, mask_ratio=0.5):
         B = x.shape[0] // 2
-        x_ref, x_study = x[B:], x[:B]
+        x_ref, x_study = x[:B], x[B:]
         
         mask, ids_shuffle, ids_restore = self.gen_mask(x, mask_ratio)
+        mask = mask[:B]
         
         mask_expanded = mask.unsqueeze(-1).repeat(1, 1, x.shape[-1])  # [N, L, D]
         
@@ -337,7 +342,6 @@ class MaskedAutoencoderViT(nn.Module):
             
             x = torch.cat([x_ref, x_study], dim=0)
             
-            
         # add pos embed
         x = x + self.decoder_pos_embed
 
@@ -361,6 +365,7 @@ class MaskedAutoencoderViT(nn.Module):
         mask: [N, L], 0 is keep, 1 is remove, 
         """
         target = self.patchify(imgs)
+            
         if self.norm_pix_loss:
             mean = target.mean(dim=-1, keepdim=True)
             var = target.var(dim=-1, keepdim=True)
@@ -368,25 +373,31 @@ class MaskedAutoencoderViT(nn.Module):
             
         if self.mask_strategy == "dual":
             # dual reconstruction loss
-            N, L, D = pred.shape[0]
-            B = N // 2
-            
+            N, L, D = pred.shape
+            B = N // 2 
             pred_ref, pred_study = pred[:B], pred[B:]
+            target_ref, target_study = target[:B], target[B:]
+            
             mask_expanded = mask.unsqueeze(-1).repeat(1, 1, D)
+            # for ref, mask = 1 means that the tokens is masked
+            # for study, mask = 0 means that the tokens is masked
             
-            unmix_pred = pred_ref * mask_expanded + pred_study * (1 - mask_expanded)
+            # since we need to compute loss on the masked tokens
+            # we need to mix the prediction and target, i.e., pred_ref * mask_expanded + pred_study * (1 - mask_expanded)
+            mixed_pred = pred_ref * mask_expanded + pred_study * (1 - mask_expanded)
+            mixed_target =  target_ref* mask_expanded + target_study * (1 - mask_expanded)
             
-            loss = (unmix_pred - target) ** 2
+            loss = (mixed_pred - mixed_target) ** 2
             loss = loss.mean()    
         else:
             loss = (pred - target) ** 2
             loss = loss.mean(dim=-1)  # [N, L], mean loss per patch
 
             loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
-            return loss
+        return loss
             
     def forward(self, imgs, mask_ratio=0.75):
-        if isinstance(imgs, list) or isinstance(imgs, tuple): # multiple images, one for main, one for ref
+        if isinstance(imgs, list) or isinstance(imgs, tuple): # multiple images, one for ref, one for study
             imgs = torch.vstack(imgs) # [N, 3, H, W]
         latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
         pred = self.forward_decoder(latent, mask, ids_restore)  # [N, L, p*p*3]
@@ -424,14 +435,43 @@ mae_vit_base_patch16 = mae_vit_base_patch16_dec512d8b  # decoder: 512 dim, 8 blo
 mae_vit_large_patch16 = mae_vit_large_patch16_dec512d8b  # decoder: 512 dim, 8 blocks
 mae_vit_huge_patch14 = mae_vit_huge_patch14_dec512d8b  # decoder: 512 dim, 8 blocks
 
+def load_weights(ckpt_path, model):
+    # load model
+    checkpoint = torch.load(ckpt_path, map_location='cpu')
+    msg = model.load_state_dict(checkpoint['model'], strict=False)
+    print(msg)
+
 
 if __name__ == '__main__':
     torch.manual_seed(0)
     import time
-    input_data = torch.randn(2, 3, 224, 224)
+    import requests
+    
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    
+    input_data = torch.randn(2, 3, 224, 224).to(device)
+    mae_visualizetion_url = 'https://dl.fbaipublicfiles.com/mae/visualize/mae_visualize_vit_base.pth'
+    
+    # download the pre-trained model and put it in the directory "./mae_pretraining/pretrained"
+    ckpt_path = './mae_pretraining/pretrained/mae_visualize_vit_base.pth'
+    if not os.path.exists(ckpt_path):
+        ckpt = requests.get(mae_visualizetion_url)
+        with open(ckpt_path, 'wb') as f:
+            f.write(ckpt.content)
+    
+    
+    mae_model = mae_vit_base_patch16(mask_strategy='random')
+    load_weights(ckpt_path, mae_model)
+    mae_model = mae_model.to(device)
+    # for jit
+    time1 = time.time()
+    loss, pred, mask = mae_model(input_data, mask_ratio=0.75)
+    time2 = time.time()
+    print('jit time:', time2 - time1)
+    
+    input_data = torch.randn(32, 3, 224, 224).to(device)
     
     time1 = time.time()
-    mae_model = mae_vit_base_patch16(mask_strategy='random')
     loss, pred, mask = mae_model(input_data, mask_ratio=0.75)
     time2 = time.time()
     print('mae time:', time2 - time1)
@@ -443,15 +483,17 @@ if __name__ == '__main__':
     print('med mae time:', time2 - time1)
     print(loss, pred.shape, mask.shape)
     
+    
+    mae_model.mask_strategy = 'mixed'
     time1 = time.time()
-    mae_model = mae_vit_base_patch16(mask_strategy='mixed')
     loss, pred, mask = mae_model(input_data, mask_ratio=0.5)
     time2 = time.time()
     print('mixed mae time:', time2 - time1)
     print(loss, pred.shape, mask.shape)
     
+    
+    mae_model.mask_strategy = 'dual'
     time1 = time.time()
-    mae_model = mae_vit_base_patch16(mask_strategy='dual')
     loss, pred, mask = mae_model(input_data, mask_ratio=0.5)
     time2 = time.time()
     print('dual mae time:', time2 - time1)

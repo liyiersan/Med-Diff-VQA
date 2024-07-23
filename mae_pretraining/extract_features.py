@@ -14,7 +14,7 @@ from segment_anything import sam_model_registry
 
 def get_args_parser():
     parser = argparse.ArgumentParser('MAE Feature Extraction', add_help=False)
-    parser.add_argument('--batch_size', default=8, type=int, # 256 for medical_mae
+    parser.add_argument('--batch_size', default=4, type=int, # 256 for medical_mae
                         help='Batch size for evaluation')
     # Model parameters
     parser.add_argument('--model', default='vit_base_patch16', type=str,
@@ -25,7 +25,7 @@ def get_args_parser():
     parser.set_defaults(global_pool=True)
     parser.add_argument('--cls_token', action='store_false', dest='global_pool',
                     help='Use class token instead of global pool for classification')
-    parser.add_argument('--sam_size', default=1024, type=int,
+    parser.add_argument('--sam_size', default=1024, type=int, choices=[1024, 256],
                         help='image size for SAM model -- 1024 for vit_b, 256 for vit_tiny')
     parser.add_argument('--sam_ckpt', default='./mae_pretraining/pretrained/sam_vit_b_01ec64.pth', type=str,
                         help='SAM model checkpoint path to load')
@@ -41,8 +41,8 @@ def get_args_parser():
                         help='path where to save, empty for no saving')
 
     # dataloader parameters
-    parser.add_argument('--num_workers', default=4, type=int)
-    parser.add_argument('--pin_mem', action='store_true',
+    parser.add_argument('--num_workers', default=2, type=int)
+    parser.add_argument('--pin_mem', action='store_false',
                         help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
     parser.add_argument('--no_pin_mem', action='store_false', dest='pin_mem')
     parser.set_defaults(pin_mem=True)
@@ -111,6 +111,8 @@ def build_sam_encoder(args):
         )
         args.sam_ckpt = './mae_pretraining/pretrained/lite_medsam.pth'
         misc.load_pretrain(image_encoder, args.sam_ckpt)
+    else:
+        raise ValueError(f"Invalid sam_size: {args.sam_size}, should be 1024 or 256")
     return image_encoder
 
 def main(args):
@@ -121,14 +123,16 @@ def main(args):
     dataset_test = MimicImageDataset(data_dir = args.data_path, flag='test', args=args, is_pretrain=False, sam_size=args.sam_size)
     
     scale = 1
+    max_workers = 32
     # for multi-gpu
     if args.multi_gpu:
         scale = torch.cuda.device_count() * scale
     # for lite sam model
     if args.sam_size == 256:
-        scale = scale * 4
+        scale = scale * 8
+        max_workers = 64
 
-    num_workers = min(args.num_workers * scale, 64)
+    num_workers = min(args.num_workers * scale, max_workers)
     batch_size = args.batch_size * scale
 
     data_loader_train = torch_data.DataLoader(
