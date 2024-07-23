@@ -26,7 +26,7 @@ def build_transform(is_pretrain, args):
         else:
             print('Using Directly-Resize Mode. (no RandomResizedCrop)')
             transform = transforms.Compose([
-                transforms.Resize((args.input_size, args.input_size)),
+                transforms.Resize((args.input_size, args.input_size), interpolation=Image.BICUBIC),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 transforms.Normalize(dataset_mean, dataset_std)])
@@ -50,10 +50,13 @@ class MimicImageDataset(Dataset):
 
     def __getitem__(self, idx):
         ref_img_path = self.ref_img_path_list[idx]
+        # load the png image with size 1024x1024
+        ref_img_path = os.path.join('/data/mimic-cxr-jpg-2.1.0/mimic_cxr_png', ref_img_path.split('/')[-1].replace('jpg', 'png'))
         study_img_path = self.study_img_path_list[idx]
+        study_img_path = os.path.join('/data/mimic-cxr-jpg-2.1.0/mimic_cxr_png', study_img_path.split('/')[-1].replace('jpg', 'png'))
         if self.transform:
-            ref_img = self.transform(Image.open(ref_img_path))
-            study_img = self.transform(Image.open(study_img_path))
+            ref_img = self.transform(Image.open(ref_img_path).convert('RGB'))
+            study_img = self.transform(Image.open(study_img_path).convert('RGB'))
         return ref_img, study_img
 
     

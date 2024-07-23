@@ -170,3 +170,6 @@ MedSAM/
 
 # pretrained weights
 mae_pretraining/pretrained/
+
+# pretrained image features
+pretrained_image_features/

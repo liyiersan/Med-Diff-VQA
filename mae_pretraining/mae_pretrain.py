@@ -151,7 +151,7 @@ def main(args):
     model_without_ddp = model
     print("Model = %s" % str(model_without_ddp))
     
-    misc.load_pretrain(model, args)
+    misc.load_pretrain(model, args.pretrain)
 
     eff_batch_size = args.batch_size * args.accum_iter * misc.get_world_size()
     

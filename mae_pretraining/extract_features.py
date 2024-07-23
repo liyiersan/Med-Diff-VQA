@@ -13,18 +13,18 @@ from segment_anything import sam_model_registry
 
 def get_args_parser():
     parser = argparse.ArgumentParser('MAE Feature Extraction', add_help=False)
-    parser.add_argument('--batch_size', default=256, type=int, # 256 for medical_mae
+    parser.add_argument('--batch_size', default=32, type=int, # 256 for medical_mae
                         help='Batch size for evaluation')
     # Model parameters
     parser.add_argument('--model', default='vit_base_patch16', type=str,
                         help='Name of model to extract features')
-    parser.add_argument('--pretrain', default=None, type=str,
+    parser.add_argument('--pretrain', default='./mae_pretraining/pretrained/vit-b_CXR_0.5M_mae.pth', type=str,
                     help='model checkpoint path to load')
     parser.add_argument('--global_pool', action='store_true')
     parser.set_defaults(global_pool=True)
     parser.add_argument('--cls_token', action='store_false', dest='global_pool',
                     help='Use class token instead of global pool for classification')
-    parser.add_argument('--sam_ckpt', default=None, type=str,
+    parser.add_argument('--sam_ckpt', default='./mae_pretraining/pretrained/sam_vit_b_01ec64.pth', type=str,
                         help='SAM model checkpoint path to load')
 
     # Dataset parameters
@@ -38,7 +38,7 @@ def get_args_parser():
                         help='path where to save, empty for no saving')
 
     # dataloader parameters
-    parser.add_argument('--num_workers', default=8, type=int)
+    parser.add_argument('--num_workers', default=16, type=int)
     parser.add_argument('--pin_mem', action='store_true',
                         help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
     parser.add_argument('--no_pin_mem', action='store_false', dest='pin_mem')
@@ -80,11 +80,14 @@ def save_features(ref_features, study_features, output_dir, flag='train'):
 def main(args):
     device = torch.device(args.device)
 
-
     dataset_train = MimicImageDataset(data_dir = args.data_path, flag='train', args=args, is_pretrain=False)
-    dataset_val = MimicImageDataset(data_dir = args.data_path, flag='false', args=args, is_pretrain=False)
+    dataset_val = MimicImageDataset(data_dir = args.data_path, flag='val', args=args, is_pretrain=False)
     dataset_test = MimicImageDataset(data_dir = args.data_path, flag='test', args=args, is_pretrain=False)
-
+    
+    # set transform to None
+    dataset_train.transform = None
+    dataset_val.transform = None
+    dataset_test.transform = None
 
     data_loader_train = torch_data.DataLoader(
         dataset_train,
@@ -113,18 +116,17 @@ def main(args):
         shuffle=False,
     )
     
-    model = models_vit.__dict__[args.model](
-        num_classes=args.nb_classes,
-        drop_path_rate=args.drop_path,
+    mae_model = models_vit.__dict__[args.model](
+        num_classes=1000,
         global_pool=args.global_pool,
     )
 
-    misc.load_pretrain(model, args.pretrain)
+    misc.load_pretrain(mae_model, args.pretrain)
 
-    model.to(device)
-    model.eval()
-    model_without_ddp = model
-    n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    mae_model.to(device)
+    mae_model.eval()
+    model_without_ddp = mae_model
+    n_parameters = sum(p.numel() for p in mae_model.parameters() if p.requires_grad)
 
     print("Model = %s" % str(model_without_ddp))
     print('number of params (M): %.2f' % (n_parameters / 1.e6))
@@ -133,16 +135,16 @@ def main(args):
     medsam_model = sam_model_registry["vit_b"](checkpoint=args.sam_ckpt)
     medsam_model = medsam_model.to(device)
     medsam_model.eval()
-    # Extract features
     
+    # Extract features
     print("Extracting training features...")
-    ref_train_feats, study_train_feats = extract_features(data_loader_train, model, medsam_model, device)
+    ref_train_feats, study_train_feats = extract_features(data_loader_train, mae_model, medsam_model, device)
     
     print("Extracting validation features...")
-    ref_val_feats, study_val_feats = extract_features(data_loader_val, model, medsam_model, device)
+    ref_val_feats, study_val_feats = extract_features(data_loader_val, mae_model, medsam_model, device)
     
     print("Extracting testing features...")
-    ref_test_feats, study_test_feats = extract_features(data_loader_test, model, medsam_model, device)
+    ref_test_feats, study_test_feats = extract_features(data_loader_test, mae_model, medsam_model, device)
     
     # save features to h5 file
     save_features(ref_train_feats, study_train_feats, args.output_dir, flag='train')

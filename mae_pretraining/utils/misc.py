@@ -319,9 +319,9 @@ def load_model(args, model_without_ddp, optimizer, loss_scaler):
                 loss_scaler.load_state_dict(checkpoint['scaler'])
             print("With optim & sched!")
 
-def load_pretrain(args, model):
-    if args.pretrain:
-        checkpoint = torch.load(args.pretrain, map_location='cpu')
+def load_pretrain(model, pretrain):
+    if pretrain is not None and pretrain != "":
+        checkpoint = torch.load(pretrain, map_location='cpu')
         missing_keys, unexpected_keys = model.load_state_dict(checkpoint['model'], strict=False)
         if missing_keys:
             print("Missing keys in state_dict:")
@@ -331,7 +331,7 @@ def load_pretrain(args, model):
             print("Unexpected keys in state_dict:")
             for key in unexpected_keys:
                 print(key)
-        print("Pretrain checkpoint %s" % args.pretrain)
+        print("Pretrain checkpoint %s" % pretrain)
 
 
 def all_reduce_mean(x):

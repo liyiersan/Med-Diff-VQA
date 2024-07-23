@@ -23,7 +23,7 @@ class MaskAttention(Attention):
     ) -> None:
         super().__init__(dim, num_heads, qkv_bias, qk_norm, attn_drop, proj_drop, norm_layer)
         
-    def forward(self, x: torch.Tensorm, mask=None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, mask=None) -> torch.Tensor:
         """
             x: [N, L, D]
             mask: [N, L], binary mask, 0 means from img1, 1 means from img2

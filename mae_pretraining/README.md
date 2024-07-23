@@ -20,6 +20,11 @@ Use the ViT-base model as backbone, and pretrained weights can be downloaded fro
 You need to set the mask_strategy and mask_ratio accordingly.
 
 
+## Prepare data
+```shell
+python dataset/convert.py --mimic_path ${mimic_path} --out_path ${out_path}
+```
+
 ## Pretrain
 For MAE：
 
@@ -114,7 +119,6 @@ pip install -e.
 ```
 
 Download SAM weights from [Google Drive](https://drive.google.com/drive/folders/1ETWmi4AiniJeWOt6HAsYgTjYv_fkgzoN)
-
 
 ### Run 
 ```shell
