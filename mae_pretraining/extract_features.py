@@ -8,6 +8,8 @@ from pathlib import Path
 import utils.misc as misc
 import models.vit as models_vit
 import torch.utils.data as torch_data
+import torchvision.transforms as transforms
+from dataloader.datasets import build_transform
 from dataloader.datasets import MimicImageDataset
 from segment_anything import sam_model_registry
 
@@ -88,6 +90,17 @@ def main(args):
     dataset_train.transform = None
     dataset_val.transform = None
     dataset_test.transform = None
+    
+    # define tranform manually
+    mae_args = {'input_size': 224}
+    mae_args = argparse.Namespace(**mae_args)
+    mae_transform = build_transform(is_pretrain=False, args=mae_args)
+    
+    # no normalization for SAM
+    sam_trasnform = transforms.Compose([
+        transforms.ToTensor(),
+    ])
+    
 
     data_loader_train = torch_data.DataLoader(
         dataset_train,

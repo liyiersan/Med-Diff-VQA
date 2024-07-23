@@ -54,9 +54,14 @@ class MimicImageDataset(Dataset):
         ref_img_path = os.path.join('/data/mimic-cxr-jpg-2.1.0/mimic_cxr_png', ref_img_path.split('/')[-1].replace('jpg', 'png'))
         study_img_path = self.study_img_path_list[idx]
         study_img_path = os.path.join('/data/mimic-cxr-jpg-2.1.0/mimic_cxr_png', study_img_path.split('/')[-1].replace('jpg', 'png'))
+        
+        ref_img = Image.open(ref_img_path).convert('RGB')
+        study_img = Image.open(study_img_path).convert('RGB')
+        
         if self.transform:
-            ref_img = self.transform(Image.open(ref_img_path).convert('RGB'))
-            study_img = self.transform(Image.open(study_img_path).convert('RGB'))
+            ref_img = self.transform(ref_img)
+            study_img = self.transform(study_img)
+        
         return ref_img, study_img
 
     
