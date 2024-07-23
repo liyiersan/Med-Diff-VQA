@@ -322,7 +322,9 @@ def load_model(args, model_without_ddp, optimizer, loss_scaler):
 def load_pretrain(model, pretrain):
     if pretrain is not None and pretrain != "":
         checkpoint = torch.load(pretrain, map_location='cpu')
-        missing_keys, unexpected_keys = model.load_state_dict(checkpoint['model'], strict=False)
+        if 'model' in checkpoint.keys():
+            checkpoint = checkpoint['model']
+        missing_keys, unexpected_keys = model.load_state_dict(checkpoint, strict=False)
         if missing_keys:
             print("Missing keys in state_dict:")
             for key in missing_keys:

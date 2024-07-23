@@ -1,4 +1,4 @@
-# copied from https://github.com/facebookresearch/mae/blob/main/models_vit.py
+# modified from https://github.com/facebookresearch/mae/blob/main/models_vit.py
 
 from functools import partial
 
@@ -42,6 +42,10 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
             outcome = x[:, 0]
 
         return outcome
+    
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.forward_features(x)
+        return x
 
 
 def vit_base_patch16(**kwargs):

@@ -120,9 +120,16 @@ pip install -e.
 
 Download SAM weights from [Google Drive](https://drive.google.com/drive/folders/1ETWmi4AiniJeWOt6HAsYgTjYv_fkgzoN)
 
+Since MedSAM requires img_size of $1024 \times 1024$, which is too large, you can use LiteSAM to obatin image features.
+
+LiteSAM requires a input size of $256 \times 256$, and the pretrained weights can be obtained from [Google Drive](https://drive.usercontent.google.com/download?id=18Zed-TUTsmr2zc5CHUWd5Tu13nb6vq6z&export=download&authuser=0).
+
+You need to set the sam_size and sam_weights accordingly. 
+
+
 ### Run 
 ```shell
-python extract_features.py --pretrain ${model_weights} --sam_ckpt ${sam_weights}
+python extract_features.py --pretrain ${model_weights} --sam_ckpt ${sam_weights}  --sam_size 1024 # 256 for LiteSAM
 ```
 
 

@@ -1,5 +1,6 @@
 import os
 import torch
+import numpy as np
 import pandas as pd
 from PIL import Image
 from torchvision import transforms
@@ -32,19 +33,37 @@ def build_transform(is_pretrain, args):
                 transforms.Normalize(dataset_mean, dataset_std)])
     else:
         transform = transforms.Compose([
-            transforms.Resize((args.input_size, args.input_size)),
+            transforms.Resize((args.input_size, args.input_size), interpolation=Image.BICUBIC),
             transforms.ToTensor(),
             transforms.Normalize(dataset_mean, dataset_std)])
     return transform
 
+
+def build_sam_transform(sam_size):
+    sam_transform = None
+    if sam_size is not None:
+        if sam_size != 1024:
+            sam_transform = transforms.Compose([
+                transforms.Resize((sam_size, sam_size), interpolation=Image.BICUBIC),
+                transforms.ToTensor(),
+            ])
+        else:
+            sam_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+    return sam_transform
+                                        
+
 class MimicImageDataset(Dataset):
-    def __init__(self, data_dir="/data/mimic-cxr-jpg-2.1.0/", flag='train', args=None, is_pretrain=True):
+    def __init__(self, data_dir="/data/mimic-cxr-jpg-2.1.0/", flag='train', args=None, is_pretrain=True, sam_size = None):
         csv_name = flag + '_mimic-metadata.csv'
         self.data_frame = pd.read_csv(os.path.join(data_dir, csv_name))
         self.ref_img_path_list = self.data_frame['ref_path']
         self.study_img_path_list = self.data_frame['study_path']
         assert len(self.ref_img_path_list) == len(self.study_img_path_list), 'ref and study image number not equal'
         self.transform = build_transform(is_pretrain, args=args)
+        self.sam_transform = build_sam_transform(sam_size)
+        
     def __len__(self):
         return len(self.ref_img_path_list)
 
@@ -58,11 +77,17 @@ class MimicImageDataset(Dataset):
         ref_img = Image.open(ref_img_path).convert('RGB')
         study_img = Image.open(study_img_path).convert('RGB')
         
-        if self.transform:
-            ref_img = self.transform(ref_img)
-            study_img = self.transform(study_img)
+       
+        ref_img_mae = self.transform(ref_img)
+        study_img_mae = self.transform(study_img)
         
-        return ref_img, study_img
+        if self.sam_transform is not None:
+            ref_img_sam = self.sam_transform(ref_img)
+            study_img_sam = self.sam_transform(study_img)
+            
+            return ref_img_mae, study_img_mae, ref_img_sam, study_img_sam
+        
+        return ref_img_mae, study_img_mae
 
     
 def split_train_val_test(data_dir, csv_file):

@@ -8,6 +8,10 @@ import torch.nn as nn
 
 from timm.models.vision_transformer import PatchEmbed, Block, Attention, Mlp, Optional
 
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+
 from utils.pos_embed import get_2d_sincos_pos_embed
 
 class MaskAttention(Attention):
@@ -97,7 +101,7 @@ class MaskedAutoencoderViT(nn.Module):
     def __init__(self, img_size=224, patch_size=16, in_chans=3,
                  embed_dim=1024, depth=24, num_heads=16,
                  decoder_embed_dim=512, decoder_depth=8, decoder_num_heads=16,
-                 mlp_ratio=4., norm_layer=nn.LayerNorm, norm_pix_loss=False, random_strategy='random'):
+                 mlp_ratio=4., norm_layer=nn.LayerNorm, norm_pix_loss=False, mask_strategy='random'):
         super().__init__()
 
         # --------------------------------------------------------------------------
@@ -109,7 +113,7 @@ class MaskedAutoencoderViT(nn.Module):
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim), requires_grad=False)  # fixed sin-cos embedding
 
         self.blocks = nn.ModuleList([
-            MaskedBlock(embed_dim, num_heads, mlp_ratio, qkv_bias=True, qk_scale=None, norm_layer=norm_layer)
+            MaskedBlock(embed_dim, num_heads, mlp_ratio, qkv_bias=True, norm_layer=norm_layer)
             for i in range(depth)])
         self.norm = norm_layer(embed_dim)
         # --------------------------------------------------------------------------
@@ -123,7 +127,7 @@ class MaskedAutoencoderViT(nn.Module):
         self.decoder_pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, decoder_embed_dim), requires_grad=False)  # fixed sin-cos embedding
 
         self.decoder_blocks = nn.ModuleList([
-            Block(decoder_embed_dim, decoder_num_heads, mlp_ratio, qkv_bias=True, qk_scale=None, norm_layer=norm_layer)
+            Block(decoder_embed_dim, decoder_num_heads, mlp_ratio, qkv_bias=True, norm_layer=norm_layer)
             for i in range(decoder_depth)])
 
         self.decoder_norm = norm_layer(decoder_embed_dim)
@@ -131,8 +135,11 @@ class MaskedAutoencoderViT(nn.Module):
         # --------------------------------------------------------------------------
 
         self.norm_pix_loss = norm_pix_loss
-        self.mask_strategy = random_strategy
-        assert random_strategy in ['random', 'mixed', 'dual'], f"Unknown random strategy: {random_strategy}, should be 'random', 'mixed', or 'dual'"
+        self.mask_strategy = mask_strategy
+        assert mask_strategy in ['random', 'mixed', 'dual'], f"Unknown random strategy: {mask_strategy}, should be 'random', 'mixed', or 'dual'"
+        
+        if self.mask_strategy == "dual":
+            self.cls_token_other = nn.Parameter(torch.zeros(1, 1, embed_dim))
 
         self.initialize_weights()
 
@@ -152,6 +159,9 @@ class MaskedAutoencoderViT(nn.Module):
         # timm's trunc_normal_(std=.02) is effectively normal_(std=0.02) as cutoff is too big (2.)
         torch.nn.init.normal_(self.cls_token, std=.02)
         torch.nn.init.normal_(self.mask_token, std=.02)
+        
+        if self.mask_strategy == "dual":
+            torch.nn.init.normal_(self.cls_token_other, std=.02)
 
         # initialize nn.Linear and nn.LayerNorm
         self.apply(self._init_weights)
@@ -234,7 +244,7 @@ class MaskedAutoencoderViT(nn.Module):
 
     def dual_masking(self, x, mask_ratio=0.5):
         B = x.shape[0] // 2
-        x_ref = x[B:], x_study = x[:B]
+        x_ref, x_study = x[B:], x[:B]
         
         mask, ids_shuffle, ids_restore = self.gen_mask(x, mask_ratio)
         
@@ -244,7 +254,6 @@ class MaskedAutoencoderViT(nn.Module):
         
         return x_mix, mask
         
-
     def random_masking(self, x, mask_ratio):
         """
         Perform per-sample random masking by per-sample shuffling.
@@ -307,7 +316,7 @@ class MaskedAutoencoderViT(nn.Module):
             
         elif self.mask_strategy == "mixed":
             x_ = x[:, 1:, :] # no cls token
-            N, L, D = x.shape
+            N, L, D = x_.shape
             mask_tokens = self.mask_token.expand(N, L, -1)
             mask_expanded = mask.unsqueeze(-1).repeat(1, 1, D)
             # we do not use the dual reconstruction loss as we may set a higher mask_ratio than 0.5
@@ -316,7 +325,7 @@ class MaskedAutoencoderViT(nn.Module):
             
         elif self.mask_strategy == "dual":
             x_ = x[:, 1:, :]
-            N, L, D = x.shape
+            N, L, D = x_.shape
             mask_tokens = self.mask_token.expand(N, L, -1)
             mask_expanded = mask.unsqueeze(-1).repeat(1, 1, D)
             
@@ -414,3 +423,36 @@ def mae_vit_huge_patch14_dec512d8b(**kwargs):
 mae_vit_base_patch16 = mae_vit_base_patch16_dec512d8b  # decoder: 512 dim, 8 blocks
 mae_vit_large_patch16 = mae_vit_large_patch16_dec512d8b  # decoder: 512 dim, 8 blocks
 mae_vit_huge_patch14 = mae_vit_huge_patch14_dec512d8b  # decoder: 512 dim, 8 blocks
+
+
+if __name__ == '__main__':
+    torch.manual_seed(0)
+    import time
+    input_data = torch.randn(2, 3, 224, 224)
+    
+    time1 = time.time()
+    mae_model = mae_vit_base_patch16(mask_strategy='random')
+    loss, pred, mask = mae_model(input_data, mask_ratio=0.75)
+    time2 = time.time()
+    print('mae time:', time2 - time1)
+    print(loss, pred.shape, mask.shape)
+    
+    time1 = time.time()
+    loss, pred, mask = mae_model(input_data, mask_ratio=0.9)
+    time2 = time.time()
+    print('med mae time:', time2 - time1)
+    print(loss, pred.shape, mask.shape)
+    
+    time1 = time.time()
+    mae_model = mae_vit_base_patch16(mask_strategy='mixed')
+    loss, pred, mask = mae_model(input_data, mask_ratio=0.5)
+    time2 = time.time()
+    print('mixed mae time:', time2 - time1)
+    print(loss, pred.shape, mask.shape)
+    
+    time1 = time.time()
+    mae_model = mae_vit_base_patch16(mask_strategy='dual')
+    loss, pred, mask = mae_model(input_data, mask_ratio=0.5)
+    time2 = time.time()
+    print('dual mae time:', time2 - time1)
+    print(loss, pred.shape, mask.shape)
