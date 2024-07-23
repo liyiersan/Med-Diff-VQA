@@ -1,17 +1,19 @@
 import os
+import h5py
 import tqdm
 import torch
 import argparse
 import numpy as np
-import medsam
 from pathlib import Path
 import utils.misc as misc
 import models.vit as models_vit
+import torch.utils.data as torch_data
 from dataloader.datasets import MimicImageDataset
+from segment_anything import sam_model_registry
 
 def get_args_parser():
     parser = argparse.ArgumentParser('MAE Feature Extraction', add_help=False)
-    parser.add_argument('--batch_size', default=64, type=int, # 256 for medical_mae
+    parser.add_argument('--batch_size', default=256, type=int, # 256 for medical_mae
                         help='Batch size for evaluation')
     # Model parameters
     parser.add_argument('--model', default='vit_base_patch16', type=str,
@@ -22,7 +24,7 @@ def get_args_parser():
     parser.set_defaults(global_pool=True)
     parser.add_argument('--cls_token', action='store_false', dest='global_pool',
                     help='Use class token instead of global pool for classification')
-    parser.add_argument('--sam-ckpt', default=None, type=str,
+    parser.add_argument('--sam_ckpt', default=None, type=str,
                         help='SAM model checkpoint path to load')
 
     # Dataset parameters
@@ -32,7 +34,7 @@ def get_args_parser():
                         help='images input size')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
-    parser.add_argument('--output_dir', default='./img_features', type=str,
+    parser.add_argument('--output_dir', default='./pretrained_img_features', type=str,
                         help='path where to save, empty for no saving')
 
     # dataloader parameters
@@ -67,9 +69,13 @@ def extract_features(data_loader, mae_model, sam_model, device):
     return np.vstack(ref_features), np.vstack(study_features) # (N, 1024)
 
 def save_features(ref_features, study_features, output_dir, flag='train'):
-    np.save(os.path.join(output_dir, f'{flag}_ref_features.npy'), ref_features)
-    np.save(os.path.join(output_dir, f'{flag}_study_features.npy'), study_features)
-    print(f"Features saved to {output_dir}")
+    h5_file_path = os.path.join(output_dir, f'{flag}_features.h5')
+    
+    with h5py.File(h5_file_path, 'w') as f:
+        f.create_dataset(f'{flag}_ref_features', data=ref_features, compression='gzip')
+        f.create_dataset(f'{flag}_study_features', data=study_features, compression='gzip')
+    
+    print(f"Features saved to {h5_file_path}")
 
 def main(args):
     device = torch.device(args.device)
@@ -80,7 +86,7 @@ def main(args):
     dataset_test = MimicImageDataset(data_dir = args.data_path, flag='test', args=args, is_pretrain=False)
 
 
-    data_loader_train = torch.utils.data.DataLoader(
+    data_loader_train = torch_data.DataLoader(
         dataset_train,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
@@ -89,7 +95,7 @@ def main(args):
         shuffle=False,
     )
 
-    data_loader_val = torch.utils.data.DataLoader(
+    data_loader_val = torch_data.DataLoader(
         dataset_val,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
@@ -98,7 +104,7 @@ def main(args):
         shuffle=False,
     )
     
-    data_loader_test = torch.utils.data.DataLoader(
+    data_loader_test = torch_data.DataLoader(
         dataset_test,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
@@ -124,7 +130,7 @@ def main(args):
     print('number of params (M): %.2f' % (n_parameters / 1.e6))
 
 
-    medsam_model = sam_model_registry["vit_b"](checkpoint=args.checkpoint)
+    medsam_model = sam_model_registry["vit_b"](checkpoint=args.sam_ckpt)
     medsam_model = medsam_model.to(device)
     medsam_model.eval()
     # Extract features

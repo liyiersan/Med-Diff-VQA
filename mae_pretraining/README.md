@@ -113,13 +113,12 @@ cd MedSAM
 pip install -e.
 ```
 
-### Prepare pkl file
-Download [mimic_shape_full.pkl](https://github.com/big-white-rabbit/Coarse-to-Fine-Grained-Contrastive-Learning/blob/main/feature%20extraction/data/mimic_shape_full.pkl)
+Download SAM weights from [Google Drive](https://drive.google.com/drive/folders/1ETWmi4AiniJeWOt6HAsYgTjYv_fkgzoN)
 
 
 ### Run 
 ```shell
-python extract_features.py --model_weights ${model_weights} --pkl_file ${pkl_file_path}
+python extract_features.py --pretrain ${model_weights} --sam_ckpt ${sam_weights}
 ```
 
 
