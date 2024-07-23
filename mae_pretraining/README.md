@@ -10,14 +10,14 @@ Use the ViT-base model as backbone, pretrained weights can be downloaded from [I
 ### Masked Strategy
 
 | Method | Type  | mask_ratio |
-|--------|-------|------------|
+|:------:|:-----:|:----------:|
 | MAE    | random| 0.75       |
 | MedMAE | random| 0.9        |
 | MixMAE | mixed | 0.5        |
 | MixMAE | dual  | 0.5        |
 
 
-You need to set the masked strategy and mask_ration accordingly.
+You need to set the masked strategy and mask_ratio accordingly.
 
 
 ## Pretrain
