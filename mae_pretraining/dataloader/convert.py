@@ -1,3 +1,5 @@
+# modified from https://github.com/Holipori/EKAID/blob/main/feature%20extraction/converter.py
+
 import os
 import cv2
 import numpy as np

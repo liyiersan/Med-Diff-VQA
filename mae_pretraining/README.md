@@ -22,7 +22,7 @@ You need to set the mask_strategy and mask_ratio accordingly.
 
 ## Prepare data
 ```shell
-python dataset/convert.py --mimic_path ${mimic_path} --out_path ${out_path}
+python mae_pretraining/dataloader/convert.py --mimic_path ${mimic_path} --out_path ${out_path}
 ```
 
 ## Pretrain
@@ -31,7 +31,7 @@ For MAE：
 ```shell
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 OMP_NUM_THREADS=1 \
 python -m torch.distributed.launch --nproc_per_node=8 \
- --use_env main_pretrain_multi_datasets_xray.py \
+ --use_env mae_pretraining/mae_pretrain.py \
  --output_dir ${SAVE_DIR} \
  --log_dir ${SAVE_DIR} \
  --batch_size 256 \
@@ -51,7 +51,7 @@ For MedMAE:
 ```shell
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 OMP_NUM_THREADS=1 \
 python -m torch.distributed.launch --nproc_per_node=8 \
- --use_env main_pretrain_multi_datasets_xray.py \
+ --use_env mae_pretraining/mae_pretrain.py \
  --output_dir ${SAVE_DIR} \
  --log_dir ${SAVE_DIR} \
  --batch_size 256 \
@@ -72,7 +72,7 @@ For MixMAE with mixed masking:
 ```shell
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 OMP_NUM_THREADS=1 \
 python -m torch.distributed.launch --nproc_per_node=8 \
- --use_env main_pretrain_multi_datasets_xray.py \
+ --use_env mae_pretraining/mae_pretrain.py \
  --output_dir ${SAVE_DIR} \
  --log_dir ${SAVE_DIR} \
  --batch_size 128 \
@@ -92,7 +92,7 @@ For MixMAE with dual masking:
 ```shell
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 OMP_NUM_THREADS=1 \
 python -m torch.distributed.launch --nproc_per_node=8 \
- --use_env main_pretrain_multi_datasets_xray.py \
+ --use_env mae_pretraining/mae_pretrain.py \
  --output_dir ${SAVE_DIR} \
  --log_dir ${SAVE_DIR} \
  --batch_size 128 \
@@ -129,7 +129,7 @@ You need to set the sam_size and sam_weights accordingly.
 
 ### Run 
 ```shell
-python extract_features.py --pretrain ${model_weights} --sam_ckpt ${sam_weights}  --sam_size 1024 # 256 for LiteSAM
+python mae_pretraining/extract_features.py --pretrain ${mae_weights} --sam_ckpt ${sam_weights}  --sam_size 1024 # 256 for LiteSAM
 ```
 
 

@@ -13,7 +13,7 @@ from dataloader.datasets import MimicImageDataset
 from segment_anything import sam_model_registry
 
 def get_args_parser():
-    parser = argparse.ArgumentParser('MAE Feature Extraction', add_help=False)
+    parser = argparse.ArgumentParser('Feature Extraction', add_help=False)
     parser.add_argument('--batch_size', default=4, type=int, # 256 for medical_mae
                         help='Batch size for evaluation')
     # Model parameters

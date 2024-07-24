@@ -176,3 +176,12 @@ pretrained_img_features/
 
 # logs
 *.log
+
+# vqa_data
+vqa_prepare/data/
+
+# nltk packages
+vqa_prepare/nltk_data/
+
+# llama2
+llama2/

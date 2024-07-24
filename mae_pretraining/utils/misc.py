@@ -1,4 +1,4 @@
-# copied from https://github.com/facebookresearch/mae/blob/main/util/misc.py
+# modified from https://github.com/facebookresearch/mae/blob/main/util/misc.py
 
 import builtins
 import datetime
