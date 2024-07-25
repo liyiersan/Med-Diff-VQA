@@ -186,4 +186,7 @@ def main(args):
 if __name__ == '__main__':
     parser = get_args_parser()
     args = parser.parse_args()
+    args.output_dir = os.path.join(args.output_dir, f'mae_{args.input_size}_sam_{args.sam_size}')
+    if args.output_dir:
+        Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     main(args)
