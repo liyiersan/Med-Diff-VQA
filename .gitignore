@@ -188,3 +188,6 @@ llama2/
 
 # pretrained models of MiniGPT-Med
 MiniGPT-Med/pretrained/
+
+# experiments
+MiniGPT-Med/minigpt4/expermints_folder/
