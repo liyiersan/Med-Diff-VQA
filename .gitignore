@@ -185,3 +185,6 @@ vqa_prepare/nltk_data/
 
 # llama2
 llama2/
+
+# pretrained models of MiniGPT-Med
+MiniGPT-Med/pretrained/

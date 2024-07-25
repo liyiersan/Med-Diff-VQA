@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-def resize(array, size, keep_ratio=False, resample=Image.LANCZOS):
+def resize(array, size, keep_ratio=False, resample=Image.BICUBIC):
     im = Image.fromarray(array)
 
     if keep_ratio:
@@ -96,9 +96,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--mimic_path", type=str, default='/data/mimic-cxr-jpg-2.1.0/', required=False, help="path to mimic-cxr-jpg dataset")
     parser.add_argument("-o", "--out_path", type=str, default='/data/mimic-cxr-jpg-2.1.0/mimic_cxr_png', required=False, help="path to output png dataset")
+    parser.add_argument("-s", "--size", type=int, default=256, required=False, help="size of output image")
     parser.add_argument("-w", "--workers", type=int, default=os.cpu_count(), required=False, help="number of worker threads")
     args = parser.parse_args()
-    if not os.path.exists(args.out_path):
+    if not os.path.exists(args.out_path+f"_{args.size}"):
         os.makedirs(args.out_path, exist_ok=True)
     mimic_jpg2png(data_path=args.mimic_path, out_path=args.out_path, max_workers=args.workers)
 

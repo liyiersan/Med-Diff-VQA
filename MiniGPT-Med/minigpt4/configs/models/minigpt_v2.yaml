@@ -11,7 +11,7 @@ model:
   # generation configs
   prompt: ""
 
-  llama_model: "/miniGPT-Med/llama-2-7b-chat-hf"
+  llama_model: "llama2/Llama-2-7b-chat-hf"
   lora_r: 64
   lora_alpha: 16
 

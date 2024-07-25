@@ -55,7 +55,7 @@ def build_sam_transform(sam_size):
                                         
 
 class MimicImageDataset(Dataset):
-    def __init__(self, data_dir="/data/mimic-cxr-jpg-2.1.0/", flag='train', args=None, is_pretrain=True, sam_size = None):
+    def __init__(self, data_dir="/data/mimic-cxr-jpg-2.1.0/", flag='train', args=None, is_pretrain=True, sam_size = None, return_img_id=False):
         csv_name = flag + '_mimic-metadata.csv'
         self.data_frame = pd.read_csv(os.path.join(data_dir, csv_name))
         self.ref_img_path_list = self.data_frame['ref_path']
@@ -63,31 +63,38 @@ class MimicImageDataset(Dataset):
         assert len(self.ref_img_path_list) == len(self.study_img_path_list), 'ref and study image number not equal'
         self.transform = build_transform(is_pretrain, args=args)
         self.sam_transform = build_sam_transform(sam_size)
+        self.return_img_id = return_img_id
         
     def __len__(self):
         return len(self.ref_img_path_list)
 
     def __getitem__(self, idx):
-        ref_img_path = self.ref_img_path_list[idx]
-        # load the png image with size 1024x1024
-        ref_img_path = os.path.join('/data/mimic-cxr-jpg-2.1.0/mimic_cxr_png', ref_img_path.split('/')[-1].replace('jpg', 'png'))
-        study_img_path = self.study_img_path_list[idx]
-        study_img_path = os.path.join('/data/mimic-cxr-jpg-2.1.0/mimic_cxr_png', study_img_path.split('/')[-1].replace('jpg', 'png'))
+        ref_img_id = self.ref_img_path_list[idx].split('/')[-1].split('.')[0]
+        study_img_id = self.study_img_path_list[idx].split('/')[-1].split('.')[0]
+        
+        # load the image of size 1024x1024
+        ref_img_path = os.path.join('/data/mimic-cxr-jpg-2.1.0/mimic_cxr_png', ref_img_id + '.png')
+        study_img_path = os.path.join('/data/mimic-cxr-jpg-2.1.0/mimic_cxr_png', study_img_id + '.png')
         
         ref_img = Image.open(ref_img_path).convert('RGB')
         study_img = Image.open(study_img_path).convert('RGB')
-        
        
         ref_img_mae = self.transform(ref_img)
         study_img_mae = self.transform(study_img)
         
+         # Check if SAM transformation is needed
         if self.sam_transform is not None:
             ref_img_sam = self.sam_transform(ref_img)
             study_img_sam = self.sam_transform(study_img)
-            
-            return ref_img_mae, study_img_mae, ref_img_sam, study_img_sam
-        
-        return ref_img_mae, study_img_mae
+            data = (ref_img_mae, study_img_mae, ref_img_sam, study_img_sam)
+        else:
+            data = (ref_img_mae, study_img_mae)
+
+        # Append image IDs if needed
+        if self.return_img_id:
+            data += (ref_img_id, study_img_id)
+
+        return data
 
     
 def split_train_val_test(data_dir, csv_file):

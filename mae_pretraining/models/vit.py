@@ -33,15 +33,8 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
 
         for blk in self.blocks:
             x = blk(x)
-
-        if self.global_pool:
-            x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
-            outcome = self.fc_norm(x)
-        else:
-            x = self.norm(x)
-            outcome = x[:, 0]
-
-        return outcome
+            
+        return x[:, 1:, :] # remove the cls token
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.forward_features(x)

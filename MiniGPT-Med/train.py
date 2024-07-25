@@ -7,6 +7,7 @@
 
 import argparse
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "1,2,3,4,5,6,7"
 import random
 
 import numpy as np
@@ -36,7 +37,7 @@ from minigpt4.tasks import *
 def parse_args():
     parser = argparse.ArgumentParser(description="Training")
 
-    parser.add_argument("--cfg-path", required=True, help="path to configuration file.")
+    parser.add_argument("--cfg-path", required=False, default="./MiniGPT-Med/train_configs/minigptv2_finetune.yaml", help="path to configuration file.")
     parser.add_argument(
         "--options",
         nargs="+",

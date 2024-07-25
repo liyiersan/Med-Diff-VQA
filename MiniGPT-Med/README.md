@@ -43,5 +43,6 @@ sudo apt install git-lfs
 
 ##### Download Llama2
 ```shell
-./hfd.sh NousResearch/Llama-2-13b-chat-hf --tool aria2c -x 16
+export HF_ENDPOINT="https://hf-mirror.com"
+./hfd.sh NousResearch/Llama-2-7b-chat-hf --tool aria2c -x 16
 ```
