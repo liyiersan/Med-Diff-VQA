@@ -10,6 +10,23 @@ from minigpt4.models.base_model import disabled_train
 from minigpt4.models.minigpt_base import MiniGPTBase
 from minigpt4.models.Qformer import BertConfig, BertLMHeadModel
 
+class Projector(nn.Module):
+    def __init__(self, mae_dim, sam_dim, llama_dim):
+        super().__init__()
+        self.mae_proj = nn.Linear(mae_dim, llama_dim)
+        self.sam_proj = nn.Linear(sam_dim, llama_dim)
+        
+    def forward(self, img_features):
+        if isinstance(img_features, tuple) or isinstance(img_features, list):
+            mae, sam = img_features[0], img_features[1]
+            mae = self.mae_proj(mae)
+            sam = self.sam_proj(sam)
+            img_feats = torch.cat([mae, sam], dim=-2)
+        elif img_features.shape[-1] == 3072:
+            img_feats = self.mae_proj(img_features)
+        elif img_features.shape[-1] == 4096:
+            img_feats = self.sam_proj(img_features)
+        return img_feats
 
 @registry.register_model("minigpt_v2")
 class MiniGPTv2(MiniGPTBase):
@@ -63,10 +80,11 @@ class MiniGPTv2(MiniGPTBase):
             lora_dropout=lora_dropout,
         )
 
-        img_f_dim = self.visual_encoder.num_features * 4
+        img_f_dim = self.visual_encoder.num_features * 4 if not isinstance(self.visual_encoder, nn.Identity) else 5632
         self.llama_proj = nn.Linear(
             img_f_dim, self.llama_model.config.hidden_size
         )
+        self.proj = Projector(3072, 4096, self.llama_model.config.hidden_size)
         self.chat_template = chat_template
 
         if use_grad_checkpoint_llm:
@@ -87,6 +105,11 @@ class MiniGPTv2(MiniGPTBase):
             inputs_llama = self.llama_proj(image_embeds)
             atts_llama = torch.ones(inputs_llama.size()[:-1], dtype=torch.long).to(image.device)
         return inputs_llama, atts_llama
+    
+    def proj_features(self, img_features):
+        feats = self.proj(img_features)
+        attns = torch.ones(feats.size()[:-1], dtype=torch.long).to(feats.device)
+        return feats, attns
 
     @classmethod
     def from_config(cls, cfg):
@@ -135,5 +158,8 @@ class MiniGPTv2(MiniGPTBase):
             print("Load Minigpt-4-LLM Checkpoint: {}".format(ckpt_path))
             ckpt = torch.load(ckpt_path, map_location="cpu")
             msg = model.load_state_dict(ckpt['model'], strict=False)
+            assert len(msg.unexpected_keys) == 0, f"Unexpected keys: {msg.unexpected_keys}"
 
         return model
+    
+   

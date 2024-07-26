@@ -41,6 +41,9 @@ class MultiIterLoader:
         # random sample from each loader by ratio
         loader_idx = random.choices(range(len(self.loaders)), self.ratios, k=1)[0]
         return next(self.loaders[loader_idx])
+    
+    def __len__(self):
+        return sum([len(loader) for loader in self.loaders])
 
 
 class PrefetchLoader(object):
@@ -149,6 +152,30 @@ class IterLoader:
             self._epoch += 1
             if hasattr(self._dataloader.sampler, "set_epoch") and self._use_distributed:
                 self._dataloader.sampler.set_epoch(self._epoch)
+            time.sleep(2)  # Prevent possible deadlock during epoch transition
+            self.iter_loader = iter(self._dataloader)
+            data = next(self.iter_loader)
+
+        return data
+
+    def __iter__(self):
+        return self
+
+    def __len__(self):
+        return len(self._dataloader)
+    
+
+class EvalIterLoader:
+    def __init__(self, dataloader: DataLoader, use_distributed: bool = False):
+        self._dataloader = dataloader
+        self.iter_loader = iter(self._dataloader)
+        self._use_distributed = use_distributed
+        self.epoch = 0
+        
+    def __next__(self):
+        try:
+            data = next(self.iter_loader)
+        except StopIteration:
             time.sleep(2)  # Prevent possible deadlock during epoch transition
             self.iter_loader = iter(self._dataloader)
             data = next(self.iter_loader)

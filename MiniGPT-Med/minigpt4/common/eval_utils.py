@@ -16,7 +16,7 @@ from minigpt4.tasks import *
 
 def eval_parser():
     parser = argparse.ArgumentParser(description="Demo")
-    parser.add_argument("--cfg-path", required=True, help="path to configuration file.")
+    parser.add_argument("--cfg-path", required=False, default="MiniGPT-Med/eval_configs/minigptv2_benchmark_evaluation.yaml", help="path to configuration file.")
     parser.add_argument("--name", type=str, default='A2', help="evaluation name")
     parser.add_argument("--ckpt", type=str, help="path to configuration file.")
     parser.add_argument("--eval_opt", type=str, default='all', help="path to configuration file.")

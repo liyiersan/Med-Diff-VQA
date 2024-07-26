@@ -35,7 +35,7 @@ evaluation_datasets:
 
   mimic_cxr:
     eval_file_path: /miniGPT-Med/json_files/mimic/MIMIC_test.json
-    img_path: /miniGPT-Med/mimic-cxr-dataset/image
+    img_path: /data/mimic-cxr-dataset/mimic-cxr-png
     max_new_tokens: 300
     batch_size: 10
     

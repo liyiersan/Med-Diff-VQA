@@ -11,6 +11,7 @@ model:
   chat_template: True
   lora_r: 64
   lora_alpha: 16
+  low_resource: True # for debugging
 
 datasets:
   # grounding_SLAKE:   
@@ -23,8 +24,18 @@ datasets:
   #     train:
   #       name: "blip_caption"
 
-  mimic_cxr:  
-    batch_size: 6
+  # mimic_cxr:  
+  #   batch_size: 6
+  #   vis_processor:
+  #     train:
+  #       name: "blip2_image_train"
+  #       image_size: 448
+  #   text_processor:
+  #     train:
+  #       name: "blip_caption"
+
+  diff_vqa:  
+    batch_size: 2
     vis_processor:
       train:
         name: "blip2_image_train"
@@ -113,7 +124,7 @@ run:
 
   weight_decay: 0.05
   max_epoch: 100
-  num_workers: 6
+  num_workers: 2
   warmup_steps: 1000
   iters_per_epoch: 1000
   
@@ -123,8 +134,10 @@ run:
   amp: True
   resume_ckpt_path: null
 
-  evaluate: False 
+  evaluate: True 
   train_splits: ["train"]
+  valid_splits: ["val"]
+  test_splits: ["test"]
 
   device: "cuda"
   world_size: 1

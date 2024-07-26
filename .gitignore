@@ -191,3 +191,8 @@ MiniGPT-Med/pretrained/
 
 # experiments
 MiniGPT-Med/minigpt4/expermints_folder/
+MiniGPT-Med/experiments/
+
+
+# json files
+MIMIC_test.json

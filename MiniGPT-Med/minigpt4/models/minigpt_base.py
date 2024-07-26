@@ -99,34 +99,58 @@ class MiniGPTBase(BaseModel):
         else:
             # return the multi-modal embedding in right padding
             emb_lists = []
-            if isinstance(prompts, str):
-                prompts = [prompts] * len(img_embeds)
-
-            for idx, (each_img_embed, each_prompt) in enumerate(zip(img_embeds, prompts)):
-                pn = each_img_embed.shape[-2]
-                if lengths is not None:
-                    each_img_embed = each_img_embed.reshape(-1, each_img_embed.shape[-1])
-                    each_img_embed = each_img_embed[:lengths[idx] * pn]
-                p_segs = each_prompt.split('<ImageHere>')
-                interleave_emb = []
-                for idx, seg in enumerate(p_segs[:-1]):
+            
+            ############## handle the case of ref and study ###################
+            if isinstance(img_embeds, tuple) or isinstance(img_embeds, list): 
+                device = img_embeds[0].device
+                if isinstance(prompts, str):
+                    prompts = [prompts] * len(img_embeds[0])
+                ref_embeds, study_embeds = img_embeds
+                for idx, (each_ref_embed, each_study_embed, each_prompt) in enumerate(zip(ref_embeds, study_embeds, prompts)):
+                    pn = each_ref_embed.shape[-2]
+                    stacked_img_embed = torch.cat([each_ref_embed, each_study_embed], dim=-2) 
+                    p_segs = each_prompt.split('<ImageHere>')
+                    interleave_emb = []
+                    for idx, seg in enumerate(p_segs[:-1]):
+                        p_tokens = self.llama_tokenizer(
+                            seg, return_tensors="pt", add_special_tokens=False).to(device)
+                        p_embed = self.embed_tokens(p_tokens.input_ids)
+                        interleave_emb.append(torch.cat([p_embed, stacked_img_embed[None][:, idx * pn:(idx + 1) * pn]], dim=1))
+                    wrapped_emb = torch.cat(interleave_emb, dim=1)
                     p_tokens = self.llama_tokenizer(
-                        seg, return_tensors="pt", add_special_tokens=False).to(img_embeds.device)
+                        p_segs[-1], return_tensors="pt", add_special_tokens=False).to(device)
                     p_embed = self.embed_tokens(p_tokens.input_ids)
-                    interleave_emb.append(torch.cat([p_embed, each_img_embed[None][:, idx * pn:(idx + 1) * pn]], dim=1))
-                wrapped_emb = torch.cat(interleave_emb, dim=1)
-                p_tokens = self.llama_tokenizer(
-                    p_segs[-1], return_tensors="pt", add_special_tokens=False).to(img_embeds.device)
-                p_embed = self.embed_tokens(p_tokens.input_ids)
-                wrapped_emb = torch.cat([wrapped_emb, p_embed], dim=1)
-                emb_lists.append(wrapped_emb)
+                    wrapped_emb = torch.cat([wrapped_emb, p_embed], dim=1)
+                    emb_lists.append(wrapped_emb)
+            else:
+                device = img_embeds.device
+                if isinstance(prompts, str):
+                    prompts = [prompts] * len(img_embeds)
+                for idx, (each_img_embed, each_prompt) in enumerate(zip(img_embeds, prompts)):
+                    pn = each_img_embed.shape[-2]
+                    if lengths is not None:
+                        each_img_embed = each_img_embed.reshape(-1, each_img_embed.shape[-1])
+                        each_img_embed = each_img_embed[:lengths[idx] * pn]
+                    p_segs = each_prompt.split('<ImageHere>')
+                    interleave_emb = []
+                    for idx, seg in enumerate(p_segs[:-1]):
+                        p_tokens = self.llama_tokenizer(
+                            seg, return_tensors="pt", add_special_tokens=False).to(device)
+                        p_embed = self.embed_tokens(p_tokens.input_ids)
+                        interleave_emb.append(torch.cat([p_embed, each_img_embed[None][:, idx * pn:(idx + 1) * pn]], dim=1))
+                    wrapped_emb = torch.cat(interleave_emb, dim=1)
+                    p_tokens = self.llama_tokenizer(
+                        p_segs[-1], return_tensors="pt", add_special_tokens=False).to(device)
+                    p_embed = self.embed_tokens(p_tokens.input_ids)
+                    wrapped_emb = torch.cat([wrapped_emb, p_embed], dim=1)
+                    emb_lists.append(wrapped_emb)
 
             emb_lens = [emb.shape[1] for emb in emb_lists]
-            pad_emb = self.embed_tokens(torch.tensor(self.llama_tokenizer.pad_token_id, device=img_embeds.device))
+            pad_emb = self.embed_tokens(torch.tensor(self.llama_tokenizer.pad_token_id, device=device))
 
             max_length = max(emb_lens) if max(emb_lens) < self.max_context_len else self.max_context_len
             wrapped_embs = pad_emb.expand(len(emb_lens), max_length, -1).clone()
-            wrapped_atts = torch.zeros([len(emb_lens), max_length], dtype=torch.int, device=img_embeds.device)
+            wrapped_atts = torch.zeros([len(emb_lens), max_length], dtype=torch.int, device=device)
             
             for i, emb in enumerate(emb_lists):
                 length = emb_lens[i] if emb_lens[i] < self.max_context_len else self.max_context_len
@@ -212,6 +236,12 @@ class MiniGPTBase(BaseModel):
         ### prepare input tokens
         if 'image' in samples:
             img_embeds, img_atts = self.encode_img(samples["image"])
+        elif 'ref_feature' in samples and 'study_feature' in samples:
+            ref_feats, study_feats = samples['ref_feature'], samples['study_feature']
+            ref_embeds, ref_atts = self.proj_features(ref_feats) # [bsz, 305, 4096]
+            study_embeds, study_atts = self.proj_features(study_feats) # [bsz, 305, 4096]
+            img_embeds = (ref_embeds, study_embeds)
+            img_atts = (ref_atts, study_atts)
         else:
             img_embeds = img_atts = None
 
@@ -239,7 +269,7 @@ class MiniGPTBase(BaseModel):
             if hasattr(self, 'chat_template') and self.chat_template:
                 instruction = [self.prompt_template.format(instruct) for instruct in instruction]
 
-            if 'length' in samples:
+            if 'length' in samples: # not applicable for diff-vqa task
                 # the input is a image train (like videos)
                 bsz, pn, hs = img_embeds.shape
                 img_embeds = img_embeds.reshape(len(samples['image']), -1, pn, hs)
@@ -335,9 +365,16 @@ class MiniGPTBase(BaseModel):
 
         stopping_criteria = StoppingCriteriaList([StoppingCriteriaSub(
             stops=[torch.tensor([i]).to(self.device) for i in stop_words_ids])])
-
-        img_embeds, atts_img = self.encode_img(images.to(self.device))
-        image_lists = [[image_emb[None]] for image_emb in img_embeds]
+        
+        if isinstance(images, tuple) or isinstance(images, list):
+            ref_features, study_features = images[0], images[1]
+            ref_embeds, _ = self.proj_features(ref_features.to(self.device)) # [bs, pn, hs] 
+            study_embeds, _ = self.proj_features(study_features.to(self.device)) # [bs, pn, hs]
+            image_lists = [[ref_embed[None], study_embed[None]] for ref_embed, study_embed in zip(ref_embeds, study_embeds)]
+        else:
+            # img_embeds, atts_img = self.encode_img(images.to(self.device))
+            img_embeds = torch.randn(images.size(0), 256, 4096).to(self.device) # for debug only
+            image_lists = [[image_emb[None]] for image_emb in img_embeds]
 
         batch_embs = [self.get_context_emb(text, img_list) for text, img_list in zip(texts, image_lists)]
 

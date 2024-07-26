@@ -10,6 +10,7 @@ from minigpt4.datasets.datasets.radvqa_dataset import RadVQADataset
 from minigpt4.datasets.datasets.rsna_dataset import RSNADataset,ReferRSNADataset,IdentifyRSNADataset
 from minigpt4.datasets.datasets.nlst_dataset import NlstDataset,ReferNLSTDataset,IdentifyNLSTDataset
 from minigpt4.datasets.datasets.SLAKE_dataset import GroundingSLAKEDatase
+from minigpt4.datasets.datasets.diff_vqa_dataset import DiffVQADataset
 
 @registry.register_builder("cc_sbu_align")
 class CCSBUAlignBuilder(BaseDatasetBuilder):
@@ -279,3 +280,40 @@ class GroundingSLAKEBuilder(BaseDatasetBuilder):
 #         return datasets
     
 
+@registry.register_builder("diff_vqa")
+class DiffVQABuilder(BaseDatasetBuilder):
+    train_dataset_cls = DiffVQADataset
+    DATASET_CONFIG_DICT = {
+        "default": "configs/datasets/diff_vqa/diff_vqa.yaml",
+    }
+
+    def build_datasets(self):
+        logging.info("Building Diff VQA dataset...")
+        self.build_processors()
+        build_info = self.config.build_info
+        datasets = dict()
+
+        dataset_cls = self.train_dataset_cls
+
+        datasets['train'] = dataset_cls(
+            flag = 'train',
+            text_processor=self.text_processors['train'],
+            ann_path=build_info.ann_path,
+            vis_root=build_info.image_path,
+        )
+        
+        datasets['val'] = dataset_cls(
+            flag = 'val',
+            text_processor=self.text_processors['train'],
+            ann_path=build_info.ann_path,
+            vis_root=build_info.image_path,
+        )
+        
+        datasets['test'] = dataset_cls(
+            flag = 'test',
+            text_processor=self.text_processors['train'],
+            ann_path=build_info.ann_path,
+            vis_root=build_info.image_path   
+        )
+
+        return datasets

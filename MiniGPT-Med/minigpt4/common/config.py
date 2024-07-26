@@ -38,7 +38,7 @@ class Config:
 
         # Override the default configuration with user options.
         self.config = OmegaConf.merge(
-            runner_config, model_config, dataset_config,evaluation_dataset_config, user_config
+            runner_config, model_config, dataset_config, evaluation_dataset_config, user_config
         )
 
     def _validate_runner_config(self, runner_config):

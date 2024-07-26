@@ -148,11 +148,16 @@ class BaseModel(nn.Module):
         if not freeze:
             precision = "fp32"  # fp16 is not for training
 
-        visual_encoder = create_eva_vit_g(
-            img_size, drop_path_rate, use_grad_checkpoint, precision
-        )
+        # visual_encoder = create_eva_vit_g(
+        #     img_size, drop_path_rate, use_grad_checkpoint, precision
+        # )
 
-        ln_vision = LayerNorm(visual_encoder.num_features)
+        # ln_vision = LayerNorm(visual_encoder.num_features)
+        
+        # change for diff-vqa model
+        visual_encoder = nn.Identity()
+        ln_vision = nn.Identity()
+        freeze = False
 
         if freeze:
             for name, param in visual_encoder.named_parameters():

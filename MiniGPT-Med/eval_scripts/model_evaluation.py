@@ -6,7 +6,7 @@ torchrun --master-port 8888 --nproc_per_node 1 eval_scripts/model_evaluation.py 
 '''
 
 import sys
-sys.path.append('.')
+sys.path.append('./MiniGPT-Med')
 import os
 import re
 import json

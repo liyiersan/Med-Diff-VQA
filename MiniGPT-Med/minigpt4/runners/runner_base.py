@@ -29,6 +29,7 @@ from minigpt4.datasets.datasets.dataloader_utils import (
     IterLoader,
     MultiIterLoader,
     PrefetchLoader,
+    EvalIterLoader
 )
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, DistributedSampler
@@ -546,6 +547,8 @@ class RunnerBase:
 
                 if is_train:
                     loader = IterLoader(loader, use_distributed=self.use_distributed)
+                else:
+                    loader = EvalIterLoader(loader, use_distributed=self.use_distributed)
 
             return loader
 

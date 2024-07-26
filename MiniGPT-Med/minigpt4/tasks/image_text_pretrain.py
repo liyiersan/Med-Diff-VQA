@@ -15,4 +15,4 @@ class ImageTextPretrainTask(BaseTask):
         super().__init__()
 
     def evaluation(self, model, data_loader, cuda_enabled=True):
-        pass
+        return super().evaluation(model, data_loader, cuda_enabled)

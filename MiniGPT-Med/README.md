@@ -15,7 +15,7 @@ conda activate miniGPT-Med
 
 * miniGPT-Med's weights [miniGPT-Med Model](https://drive.google.com/file/d/1kjGLk6s9LsBmXfLWQFCdlwF3aul08Cl8/view?usp=sharing)
 
-* Then modify line 8 at miniGPT-Med/eval_configs/minigptv2_eval.yaml to be the path of miniGPT-Med weight.
+* Then modify line 9 at MiniGPT-Med/train_configs/minigptv2_finetune.yaml to be the path of miniGPT-Med weight.
 
 ## Prepare weight for LLMs
 
@@ -25,7 +25,7 @@ conda activate miniGPT-Med
 git clone https://huggingface.co/meta-llama/Llama-2-13b-chat-hf
 ```
 
-Then modify line 14 at miniGPT-Med/minigpt4/configs/models/minigpt_v2.yaml to be the path of Llama-2-13b-chat-hf.
+Then modify line 14 at MiniGPT-Med/minigpt4/configs/models/minigpt_v2.yaml and line 8 at MiniGPT-Med/train_configs/minigptv2_finetune.yaml to be the path of Llama-2-13b-chat-hf.
 
 ### Better Download of Llama2
 
@@ -45,4 +45,17 @@ sudo apt install git-lfs
 ```shell
 export HF_ENDPOINT="https://hf-mirror.com"
 ./hfd.sh NousResearch/Llama-2-7b-chat-hf --tool aria2c -x 16
+```
+##### Training 
+
+```shell
+torchrun --nproc-per-node NUM_GPU train.py --cfg-path train_configs/minigptv2_finetune.yaml
+```
+
+##### Eval
+
+Modify line 8 and line 9 at MiniGPT-Med/eval_configs/diff_vqa_eval.yaml to be the path of Llama-2-13b-chat-hf and trained model weights.
+
+```shell
+python MiniGPT-Med/eval_scripts/diff_vqa_eval.py
 ```

@@ -1,0 +1,6 @@
+datasets:
+  diff_vqa:
+    data_type: images
+    build_info:
+      image_path: /data/zq/vqa_codes/pretrained_img_features/mae_224_sam_1024
+      ann_path: /data/mimic-cxr-jpg-2.1.0/

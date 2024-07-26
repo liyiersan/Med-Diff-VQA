@@ -71,35 +71,45 @@ class BaseTask:
         return loss
 
     def valid_step(self, model, samples):
-        raise NotImplementedError
+        loss = model(samples)["loss"]
+        return loss
 
     def before_evaluation(self, model, dataset, **kwargs):
         model.before_evaluation(dataset=dataset, task_type=type(self))
 
     def after_evaluation(self, **kwargs):
-        pass
+        val_result = kwargs["val_result"]
+        # loss as the default metric, since the smaller the better, we use 1/loss as the metric
+        # as well as keep the loss is non-negative
+        
+        return {"agg_metrics": 1000 - float(val_result["loss"])}
 
     def inference_step(self):
         raise NotImplementedError
 
     def evaluation(self, model, data_loader, cuda_enabled=True):
         metric_logger = MetricLogger(delimiter="  ")
+        metric_logger.add_meter("loss", SmoothedValue(window_size=1, fmt="{value:.4f}"))
         header = "Evaluation"
         # TODO make it configurable
         print_freq = 10
 
-        results = []
-
-        for samples in metric_logger.log_every(data_loader, print_freq, header):
+        val_iters = len(data_loader)
+        for samples in metric_logger.log_every(range(val_iters), print_freq, header):
+            samples = next(data_loader)
             samples = prepare_sample(samples, cuda_enabled=cuda_enabled)
 
-            eval_output = self.valid_step(model=model, samples=samples)
-            results.extend(eval_output)
+            loss = self.valid_step(model=model, samples=samples)
+            metric_logger.update(loss=loss.item())
 
-        if is_dist_avail_and_initialized():
-            dist.barrier()
-
-        return results
+        # after train_epoch()
+        # gather the stats from all processes
+        metric_logger.synchronize_between_processes()
+        logging.info("Averaged stats: " + str(metric_logger.global_avg()))
+        return {
+            k: "{:.3f}".format(meter.global_avg)
+            for k, meter in metric_logger.meters.items()
+        }
 
     def train_epoch(
         self,
