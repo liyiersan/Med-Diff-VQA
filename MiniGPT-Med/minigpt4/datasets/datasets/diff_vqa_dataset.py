@@ -35,19 +35,24 @@ class DiffVQADataset(Dataset):
         # return mae_features # fast debugging
 
     def __len__(self):
-        if self.flag == 'train':
-            length = 100
-        elif self.flag == 'val':
-            length = 4
-        elif self.flag == 'test':
-            length = 8
-        return length
+        # # for debug only
+        # if self.flag == 'train':
+        #     length = 100
+        # elif self.flag == 'val':
+        #     length = 4
+        # elif self.flag == 'test':
+        #     length = 8
+        # return length
+
+        return len(self.questions)
 
     def __getitem__(self, index):
         ref_img_id = self.ref_img_path_list[index].split('/')[-1].split('.')[0]
         study_img_id = self.study_img_path_list[index].split('/')[-1].split('.')[0]
-        ref_img_id = "0a0f60d6-707064a5-828e58b1-f2487506-a63a8869"
-        study_img_id = "0a0f60d6-707064a5-828e58b1-f2487506-a63a8869"
+        
+        # # for debug only
+        # ref_img_id = "0a0f60d6-707064a5-828e58b1-f2487506-a63a8869"
+        # study_img_id = "0a0f60d6-707064a5-828e58b1-f2487506-a63a8869"
         
         question = self.questions[index]
         answer = self.answers[index]
