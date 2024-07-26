@@ -15,17 +15,20 @@ class Projector(nn.Module):
         super().__init__()
         self.mae_proj = nn.Linear(mae_dim, llama_dim)
         self.sam_proj = nn.Linear(sam_dim, llama_dim)
+        self.conv = nn.Conv1d(llama_dim, llama_dim, 3, 2, 1)
         
     def forward(self, img_features):
         if isinstance(img_features, tuple) or isinstance(img_features, list):
             mae, sam = img_features[0], img_features[1]
             mae = self.mae_proj(mae)
             sam = self.sam_proj(sam)
-            img_feats = torch.cat([mae, sam], dim=-2)
+            img_feats = torch.cat([mae, sam], dim=-2) # [bs, 305, 4096]
+            # use conv to reduce the length of the sequence
+            img_feats = self.conv(img_feats.permute(0, 2, 1)).permute(0, 2, 1) # [bs, 153, 4096]
         elif img_features.shape[-1] == 3072:
-            img_feats = self.mae_proj(img_features)
+            img_feats = self.mae_proj(img_features) # [bs, 49, 4096]
         elif img_features.shape[-1] == 4096:
-            img_feats = self.sam_proj(img_features)
+            img_feats = self.sam_proj(img_features) # [bs, 256, 4096]
         return img_feats
 
 @registry.register_model("minigpt_v2")

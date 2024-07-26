@@ -8,14 +8,10 @@ torchrun --master-port 8888 --nproc_per_node 1 eval_scripts/model_evaluation.py 
 import sys
 sys.path.append('./MiniGPT-Med')
 import os
-import re
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import json
 import argparse
-import random
-import numpy as np
 
-import torch
-import pickle
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from minigpt4.common.config import Config

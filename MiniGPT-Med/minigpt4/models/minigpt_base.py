@@ -9,6 +9,7 @@ from minigpt4.common.registry import registry
 from minigpt4.models.base_model import BaseModel
 from transformers import StoppingCriteria, StoppingCriteriaList
 
+from minigpt4.datasets.data_utils import move_to_cuda
 from minigpt4.conversation.conversation import StoppingCriteriaSub
 
 class MiniGPTBase(BaseModel):
@@ -368,8 +369,8 @@ class MiniGPTBase(BaseModel):
         
         if isinstance(images, tuple) or isinstance(images, list):
             ref_features, study_features = images[0], images[1]
-            ref_embeds, _ = self.proj_features(ref_features.to(self.device)) # [bs, pn, hs] 
-            study_embeds, _ = self.proj_features(study_features.to(self.device)) # [bs, pn, hs]
+            ref_embeds, _ = self.proj_features(move_to_cuda(ref_features)) # [bs, pn, hs] 
+            study_embeds, _ = self.proj_features(move_to_cuda(study_features)) # [bs, pn, hs]
             image_lists = [[ref_embed[None], study_embed[None]] for ref_embed, study_embed in zip(ref_embeds, study_embeds)]
         else:
             # img_embeds, atts_img = self.encode_img(images.to(self.device))

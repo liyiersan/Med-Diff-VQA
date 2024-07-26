@@ -47,6 +47,7 @@ export HF_ENDPOINT="https://hf-mirror.com"
 ## Requirements
 ```txt
 perf==0.2.0
+transformers==4.37.2
 ```
 For other packages, download the latest as you need via `pip install`.
 

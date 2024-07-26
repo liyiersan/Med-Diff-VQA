@@ -31,8 +31,11 @@ class DiffVQADataset(Dataset):
         mae_features = rearrange(mae_features, '(L n) d -> L (n d)', n=4) # [49, 3072]
         sam_features = img_features['sam'] # [256, 64, 64]
         sam_features = rearrange(sam_features, 'c (h n1) (w n2) -> (h w) (n1 n2 c)', n1=4, n2=4) # [256, 4096]
+        
+        # # fast debugging
+        # return mae_features 
+        
         return mae_features, sam_features
-        # return mae_features # fast debugging
 
     def __len__(self):
         # # for debug only
@@ -50,7 +53,7 @@ class DiffVQADataset(Dataset):
         ref_img_id = self.ref_img_path_list[index].split('/')[-1].split('.')[0]
         study_img_id = self.study_img_path_list[index].split('/')[-1].split('.')[0]
         
-        # # for debug only
+        # for debug only
         # ref_img_id = "0a0f60d6-707064a5-828e58b1-f2487506-a63a8869"
         # study_img_id = "0a0f60d6-707064a5-828e58b1-f2487506-a63a8869"
         
