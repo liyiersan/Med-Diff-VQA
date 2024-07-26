@@ -1,7 +1,4 @@
-# MiniGPT-Med: Large Language Model as a General Interface for Radiology Diagnosis
-Asma Alkhaldi, Raneem Alnajim, Layan Alabdullatef, Rawan Alyahya, Jun Chen, Deyao Zhu, Ahmed Alsinan, Mohamed Elhoseiny
-
-*Saudi Data and Artificial Intelligence Authority (SDAIA) and King Abdullah University of Science and Technology (KAUST)*
+# [MiniGPT-Med](https://github.com/Vision-CAIR/MiniGPT-Med) Finetuning with Pretrained Image Features for [Med-Diff-VQA](https://github.com/Holipori/MIMIC-Diff-VQA)
 
 ## Installation
 ```bash
