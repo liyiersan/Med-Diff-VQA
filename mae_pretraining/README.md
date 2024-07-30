@@ -132,4 +132,10 @@ You need to set the sam_size and sam_weights accordingly.
 python mae_pretraining/extract_features.py --pretrain ${mae_weights} --sam_ckpt ${sam_weights}  --sam_size 1024 # 256 for LiteSAM
 ```
 
+Since there may be repeated images in csv files, extract_feats_new.py would be more efficient.
+
+```shell
+python mae_pretraining/extract_feats_new.py --pretrain ${mae_weights} --sam_ckpt ${sam_weights}  --sam_size 1024 # 256 for LiteSAM
+```
+
 
