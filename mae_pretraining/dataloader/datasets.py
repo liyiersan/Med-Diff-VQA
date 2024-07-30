@@ -58,8 +58,8 @@ class MimicImageDataset(Dataset):
     def __init__(self, data_dir="/data/mimic-cxr-jpg-2.1.0/", flag='train', args=None, is_pretrain=True, sam_size = None, return_img_id=False):
         csv_name = flag + '_mimic-metadata.csv'
         self.data_frame = pd.read_csv(os.path.join(data_dir, csv_name))
-        self.ref_img_path_list = self.data_frame['ref_path']
-        self.study_img_path_list = self.data_frame['study_path']
+        self.ref_img_path_list = self.data_frame['ref_path'].to_list()
+        self.study_img_path_list = self.data_frame['study_path'].to_list()
         assert len(self.ref_img_path_list) == len(self.study_img_path_list), 'ref and study image number not equal'
         self.transform = build_transform(is_pretrain, args=args)
         self.sam_transform = build_sam_transform(sam_size)

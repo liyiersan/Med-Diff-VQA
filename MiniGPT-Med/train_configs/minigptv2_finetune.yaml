@@ -11,7 +11,7 @@ model:
   chat_template: True
   lora_r: 64
   lora_alpha: 16
-  low_resource: True # for debugging
+  low_resource: False # for debugging
 
 datasets:
   # grounding_SLAKE:   

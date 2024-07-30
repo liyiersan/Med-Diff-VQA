@@ -3,7 +3,7 @@ model:
   model_type: pretrain
   max_txt_len: 500
   end_sym: "</s>"
-  low_resource: True # for debugging
+  low_resource: False # for debugging
   prompt_template: '[INST] {} [/INST]'
   llama_model: "llama2/Llama-2-7b-chat-hf"
   ckpt: "MiniGPT-Med/pretrained/miniGPT_Med.pth"
