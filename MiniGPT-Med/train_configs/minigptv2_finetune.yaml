@@ -11,7 +11,7 @@ model:
   chat_template: True
   lora_r: 64
   lora_alpha: 16
-  low_resource: False # for debugging
+  low_resource: False # for debugging, set to True to save resources
 
 datasets:
   # grounding_SLAKE:   
@@ -134,7 +134,7 @@ run:
   amp: True
   resume_ckpt_path: null
 
-  evaluate: True 
+  evaluate: False 
   train_splits: ["train"]
   valid_splits: ["val"]
   test_splits: ["test"]
@@ -142,7 +142,7 @@ run:
   device: "cuda"
   world_size: 1
   dist_url: "env://"
-  distributed: False
+  distributed: True
 
   wandb_log: False
   job_name: minigptv2_finetune_final
