@@ -6,7 +6,7 @@ model:
   low_resource: False # for debugging, set to True to save resources
   prompt_template: '[INST] {} [/INST]'
   llama_model: "llama2/Llama-2-7b-chat-hf"
-  ckpt: "MiniGPT-Med/pretrained/miniGPT_Med.pth"
+  ckpt: "MiniGPT-Med/minigpt4/expermints_folder/20240805221/checkpoint_99.pth"
   lora_r: 64
   lora_alpha: 16
 
@@ -26,7 +26,7 @@ evaluation_datasets:
     ann_path: /data/mimic-cxr-jpg-2.1.0/
     vis_root: ./pretrained_img_features/mae_224_sam_1024
     max_new_tokens: 300
-    batch_size: 2
+    batch_size: 1
     text_processor:
         name: "blip_caption"
 

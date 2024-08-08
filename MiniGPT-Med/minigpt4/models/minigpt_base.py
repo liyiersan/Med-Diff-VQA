@@ -364,8 +364,8 @@ class MiniGPTBase(BaseModel):
             function for generate test use
         '''
 
-        stopping_criteria = StoppingCriteriaList([StoppingCriteriaSub(
-            stops=[torch.tensor([i]).to(self.device) for i in stop_words_ids])])
+        # stopping_criteria = StoppingCriteriaList([StoppingCriteriaSub(
+        #     stops=[torch.tensor([i]).to(self.device) for i in stop_words_ids])])
         
         if isinstance(images, tuple) or isinstance(images, list):
             ref_features, study_features = images[0], images[1]

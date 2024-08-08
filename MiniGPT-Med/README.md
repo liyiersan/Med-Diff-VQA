@@ -64,3 +64,8 @@ Modify line 8 and line 9 at MiniGPT-Med/eval_configs/diff_vqa_eval.yaml to be th
 ```shell
 python MiniGPT-Med/eval_scripts/diff_vqa_eval.py
 ```
+
+Currently, the eval script works only when batch_size=1, to speed up evaluation, you can use the ddp script.
+```shell
+torchrun --nproc_per_node=8 --master_port=8888 MiniGPT-Med/eval_scripts/diff_vqa_eval.py
+```

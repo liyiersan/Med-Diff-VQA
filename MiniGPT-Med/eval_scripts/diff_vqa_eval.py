@@ -7,11 +7,10 @@ torchrun --master-port 8888 --nproc_per_node 1 eval_scripts/model_evaluation.py 
 
 import sys
 sys.path.append('./MiniGPT-Med')
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import json
 import argparse
 
+import torch
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from minigpt4.common.config import Config
@@ -35,7 +34,7 @@ def eval_parser():
     parser.add_argument("--name", type=str, default='A2', help="evaluation name")
     parser.add_argument("--ckpt", type=str, help="path to configuration file.")
     parser.add_argument("--eval_opt", type=str, default='all', help="path to configuration file.")
-    parser.add_argument("--max_new_tokens", type=int, default=10, help="max number of generated tokens")
+    parser.add_argument("--max_new_tokens", type=int, default=300, help="max number of generated tokens")
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--lora_r", type=int, default=64, help="lora rank of the model")
     parser.add_argument("--lora_alpha", type=int, default=16, help="lora alpha")
@@ -97,26 +96,32 @@ ann_path = dataset_cfg['ann_path']
 max_new_tokens = dataset_cfg['max_new_tokens']
 batch_size = dataset_cfg['batch_size']
 
+# if torch.cuda.device_count() > 1:
+#     model = torch.nn.DataParallel(model)
+#     batch_size = batch_size * torch.cuda.device_count()
+#     model = model.module
 
 gts = {}
 preds = {}
 save_datas = {}
 
-eavl_dataset = EvalDiffVQADataset("test", text_processor, vis_root, ann_path)
-data_loader = DataLoader(eavl_dataset, batch_size=batch_size, shuffle=False)
-for data in data_loader:
-    ref_features, study_features, instructions, questions, gt_answers, study_ids = data
-    images = (ref_features, study_features)
-    texts = prepare_texts(instructions, conv_temp)
-    answers = model.generate(images, texts, max_new_tokens=max_new_tokens, do_sample=False)
-    for answer, img_id, question, gt_answer in zip(answers, study_ids, questions, gt_answers):
-        imgId = str(img_id.item())
-        gt_data = [{'study_id': imgId, 'caption': f'{gt_answer}'}]
-        gts[imgId] = gt_data
-        pred_data = [{'study_id': imgId, 'caption': f'{answer}'}]
-        preds[imgId] = pred_data
-        save_data = [{'id': imgId, 'answer': f'{answer}', 'question': f'{question}', 'gt_answer': f'{gt_answer}'}]
-        save_datas[imgId] = save_data
+with torch.no_grad():
+    eavl_dataset = EvalDiffVQADataset("test", text_processor, vis_root, ann_path)
+    data_loader = DataLoader(eavl_dataset, batch_size=batch_size, shuffle=False)
+    for i, data in enumerate(data_loader):
+        print(f'processing {i}/{len(data_loader)} batch...') 
+        ref_features, study_features, instructions, questions, gt_answers, study_ids = data
+        images = (ref_features, study_features)
+        texts = prepare_texts(instructions, conv_temp)
+        answers = model.generate(images, texts, max_new_tokens=max_new_tokens, do_sample=False)
+        for answer, img_id, question, gt_answer in zip(answers, study_ids, questions, gt_answers):
+            imgId = str(img_id.item())
+            gt_data = [{'study_id': imgId, 'caption': f'{gt_answer}'}]
+            gts[imgId] = gt_data
+            pred_data = [{'study_id': imgId, 'caption': f'{answer}'}]
+            preds[imgId] = pred_data
+            save_data = [{'id': imgId, 'answer': f'{answer}', 'question': f'{question}', 'gt_answer': f'{gt_answer}'}]
+            save_datas[imgId] = save_data
         
 # save the results
 print('saving the results...')

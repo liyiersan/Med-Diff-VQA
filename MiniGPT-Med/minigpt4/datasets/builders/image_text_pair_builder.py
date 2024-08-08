@@ -302,18 +302,18 @@ class DiffVQABuilder(BaseDatasetBuilder):
             vis_root=build_info.image_path,
         )
         
-        datasets['val'] = dataset_cls(
-            flag = 'val',
-            text_processor=self.text_processors['train'],
-            ann_path=build_info.ann_path,
-            vis_root=build_info.image_path,
-        )
+        # datasets['val'] = dataset_cls(
+        #     flag = 'val',
+        #     text_processor=self.text_processors['train'],
+        #     ann_path=build_info.ann_path,
+        #     vis_root=build_info.image_path,
+        # )
         
-        datasets['test'] = dataset_cls(
-            flag = 'test',
-            text_processor=self.text_processors['train'],
-            ann_path=build_info.ann_path,
-            vis_root=build_info.image_path   
-        )
+        # datasets['test'] = dataset_cls(
+        #     flag = 'test',
+        #     text_processor=self.text_processors['train'],
+        #     ann_path=build_info.ann_path,
+        #     vis_root=build_info.image_path   
+        # )
 
         return datasets

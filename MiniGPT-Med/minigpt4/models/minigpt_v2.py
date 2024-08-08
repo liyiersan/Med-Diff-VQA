@@ -15,7 +15,7 @@ class Projector(nn.Module):
         super().__init__()
         self.mae_proj = nn.Linear(mae_dim, llama_dim)
         self.sam_proj = nn.Linear(sam_dim, llama_dim)
-        self.conv = nn.Conv1d(llama_dim, llama_dim, 3, 2, 1)
+        self.conv = nn.Conv1d(llama_dim, llama_dim, 3, 2, 0)
         
     def forward(self, img_features):
         if isinstance(img_features, tuple) or isinstance(img_features, list):
