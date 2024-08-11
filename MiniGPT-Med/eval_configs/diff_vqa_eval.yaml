@@ -6,7 +6,7 @@ model:
   low_resource: False # for debugging, set to True to save resources
   prompt_template: '[INST] {} [/INST]'
   llama_model: "llama2/Llama-2-7b-chat-hf"
-  ckpt: "MiniGPT-Med/minigpt4/expermints_folder/20240805221/checkpoint_99.pth"
+  ckpt: "your_pretrained_model.ckpt"
   lora_r: 64
   lora_alpha: 16
 

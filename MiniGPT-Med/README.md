@@ -47,7 +47,8 @@ export HF_ENDPOINT="https://hf-mirror.com"
 ## Requirements
 ```txt
 perf==0.2.0
-transformers==4.37.2
+transformers==4.30.0
+sentence-transformers==2.2.2
 ```
 For other packages, download the latest as you need via `pip install`.
 
@@ -67,5 +68,5 @@ python MiniGPT-Med/eval_scripts/diff_vqa_eval.py
 
 Currently, the eval script works only when batch_size=1, to speed up evaluation, you can use the ddp script.
 ```shell
-torchrun --nproc_per_node=8 --master_port=8888 MiniGPT-Med/eval_scripts/diff_vqa_eval.py
+torchrun --nproc_per_node=8 --master_port=8888 MiniGPT-Med/eval_scripts/diff_vqa_eval_ddp.py
 ```

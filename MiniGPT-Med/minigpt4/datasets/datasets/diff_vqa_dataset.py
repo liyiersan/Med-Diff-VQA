@@ -20,9 +20,7 @@ class DiffVQADataset(Dataset):
         assert len(self.questions) == len(self.answers), 'Lengths do not match'
         
         self.instruction_pool = [
-            'In the first reference image and the second main image, {}',
-            'The first is the reference image and the second is the main image, {}',
-            'The first image is the reference and the second is the main, {}',
+            'Focus on the changes in the second main image compared to the first reference image, then answer {}',
         ]
 
     def decouple_img_features(self, img_features):
@@ -65,7 +63,7 @@ class DiffVQADataset(Dataset):
         study_feature = self.decouple_img_features(study_feature)
         
         instruction = random.choice(self.instruction_pool).format(question)
-        instruction = f'<Img1><ImageHere></Img1> <Img2><ImageHere><Img2> [vqa] {self.text_processor(instruction)}'
+        instruction = f'[INST] <Img1><ImageHere></Img1> <Img2><ImageHere><Img2> [vqa] {self.text_processor(instruction)} [/INST]'
 
 
         return {

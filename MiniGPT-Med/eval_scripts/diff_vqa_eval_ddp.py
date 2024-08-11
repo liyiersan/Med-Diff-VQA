@@ -104,19 +104,13 @@ def main(rank, world_size, args):
             answers = model.module.generate(images, texts, max_new_tokens=max_new_tokens, do_sample=False)
             for answer, img_id, question, gt_answer in zip(answers, study_ids, questions, gt_answers):
                 imgId = str(img_id.item())
+                gt_answer = gt_answer.lstrip().rstrip() # remove leading and trailing whitespaces
                 gt_data = [{'study_id': imgId, 'caption': f'{gt_answer}'}]
                 gts[imgId] = gt_data
                 pred_data = [{'study_id': imgId, 'caption': f'{answer}'}]
                 preds[imgId] = pred_data
                 save_data = [{'id': imgId, 'answer': f'{answer}', 'question': f'{question}', 'gt_answer': f'{gt_answer}'}]
-                save_datas[imgId] = save_data
-    
-    # Save the results locally for each rank
-    rank_save_path = os.path.join(save_path, f'rank_{rank}_preds.json')
-    with open(rank_save_path, 'w+') as f:
-        json.dump(save_datas, f)
-    
-    
+                save_datas[imgId] = save_data 
     
     # Aggregate results from all processes
     gathered_gts = [None for _ in range(world_size)]

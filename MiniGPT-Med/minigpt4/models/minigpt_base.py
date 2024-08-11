@@ -241,6 +241,8 @@ class MiniGPTBase(BaseModel):
             ref_feats, study_feats = samples['ref_feature'], samples['study_feature']
             ref_embeds, ref_atts = self.proj_features(ref_feats) # [bsz, 305, 4096]
             study_embeds, study_atts = self.proj_features(study_feats) # [bsz, 305, 4096]
+            ref_embeds = ref_embeds + self.ref_embed_bias
+            study_embeds = study_embeds + self.study_embed_bias
             img_embeds = (ref_embeds, study_embeds)
             img_atts = (ref_atts, study_atts)
         else:
@@ -371,6 +373,8 @@ class MiniGPTBase(BaseModel):
             ref_features, study_features = images[0], images[1]
             ref_embeds, _ = self.proj_features(move_to_cuda(ref_features)) # [bs, pn, hs] 
             study_embeds, _ = self.proj_features(move_to_cuda(study_features)) # [bs, pn, hs]
+            ref_embeds = ref_embeds + self.ref_embed_bias
+            study_embeds = study_embeds + self.study_embed_bias
             image_lists = [[ref_embed[None], study_embed[None]] for ref_embed, study_embed in zip(ref_embeds, study_embeds)]
         else:
             # img_embeds, atts_img = self.encode_img(images.to(self.device))

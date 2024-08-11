@@ -89,6 +89,8 @@ class MiniGPTv2(MiniGPTBase):
         )
         self.proj = Projector(3072, 4096, self.llama_model.config.hidden_size)
         self.chat_template = chat_template
+        self.ref_embed_bias = nn.Parameter(torch.randn(1, 1, self.llama_model.config.hidden_size))
+        self.study_embed_bias = nn.Parameter(torch.randn(1, 1, self.llama_model.config.hidden_size))
 
         if use_grad_checkpoint_llm:
             self.llama_model.gradient_checkpointing_enable()
