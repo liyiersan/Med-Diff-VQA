@@ -111,7 +111,8 @@ def main(rank, world_size, args):
                 preds[imgId] = pred_data
                 save_data = [{'id': imgId, 'answer': f'{answer}', 'question': f'{question}', 'gt_answer': f'{gt_answer}'}]
                 save_datas[imgId] = save_data 
-    
+                
+    dist.barrier()
     # Aggregate results from all processes
     gathered_gts = [None for _ in range(world_size)]
     gathered_preds = [None for _ in range(world_size)]
