@@ -34,7 +34,7 @@ chmod a+x hfd.sh
 
 ##### Install aria2 and git-lfs
 ```shell
-sudo apt install aira2
+sudo apt install aria2
 sudo apt install git-lfs
 ```
 
