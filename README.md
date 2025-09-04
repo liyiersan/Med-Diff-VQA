@@ -1,4 +1,4 @@
-### Med-VQA, Official implementation of paper "Pre-trained Diff-VQA: Pre-trained Models Help Medical Difference Visual Question Answering Do Better"
+### Med-VQA, Official implementation of paper "Anatomy-Aware Adaptation of Pre-trained Models for Medical Difference Visual Question Answering"
 
 #### 一、Image Encoder Pretraining and Image Feature Extraction
 See [mae](./mae_pretraining/README.md)
