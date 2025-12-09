@@ -12,7 +12,7 @@ conda activate miniGPT-Med
 
 * miniGPT-Med's weights [miniGPT-Med Model](https://drive.google.com/file/d/1kjGLk6s9LsBmXfLWQFCdlwF3aul08Cl8/view?usp=sharing)
 
-* Then modify line 9 at MiniGPT-Med/train_configs/minigptv2_finetune.yaml to be the path of miniGPT-Med weight.
+* Then modify `line 9` at `MiniGPT-Med/train_configs/minigptv2_finetune.yaml` to be the path of miniGPT-Med weight.
 
 ## Prepare weight for LLMs
 
@@ -22,7 +22,7 @@ conda activate miniGPT-Med
 git clone https://huggingface.co/meta-llama/Llama-2-13b-chat-hf
 ```
 
-Then modify line 14 at MiniGPT-Med/minigpt4/configs/models/minigpt_v2.yaml and line 8 at MiniGPT-Med/train_configs/minigptv2_finetune.yaml to be the path of Llama-2-13b-chat-hf.
+Then modify `line 14` at `MiniGPT-Med/minigpt4/configs/models/minigpt_v2.yaml` and `line 8` at `MiniGPT-Med/train_configs/minigptv2_finetune.yaml` to be the path of `Llama-2-13b-chat-hf`.
 
 ### Better Download of Llama2
 
